@@ -1,11 +1,13 @@
 <?php
 
-namespace Demo\Http\Controllers;
+namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
-use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use App\Models\User;
 use Wuwx\LaravelScanLogin\Services\ScanLoginService;
 use Wuwx\LaravelScanLogin\Facades\LaravelScanLogin;
 
@@ -66,15 +68,23 @@ class DemoController extends Controller
         try {
             $result = $this->scanLoginService->generateQrCode();
             
+            // Increment QR generation statistics
+            cache()->increment('demo_stats_qr_generated');
+            
+            // Get demo user for testing
+            $demoUser = User::where('email', 'demo@example.com')->first();
+            
             return response()->json([
                 'success' => true,
                 'data' => $result,
                 'demo_info' => [
                     'instructions' => 'Scan this QR code with your mobile device',
                     'test_credentials' => [
-                        'email' => 'demo@example.com',
+                        'email' => $demoUser ? $demoUser->email : 'demo@example.com',
                         'password' => 'password'
-                    ]
+                    ],
+                    'demo_user_exists' => $demoUser !== null,
+                    'total_users' => User::count()
                 ]
             ]);
         } catch (\Exception $e) {
@@ -166,7 +176,16 @@ class DemoController extends Controller
      */
     public function dashboard(): View
     {
-        return view('demo.dashboard');
+        $user = Auth::user();
+        
+        return view('demo.dashboard', [
+            'user' => $user,
+            'demo_stats' => [
+                'login_time' => now()->format('Y-m-d H:i:s'),
+                'user_agent' => request()->userAgent(),
+                'ip_address' => request()->ip(),
+            ]
+        ]);
     }
 
     /**
@@ -174,7 +193,7 @@ class DemoController extends Controller
      */
     public function logout(Request $request)
     {
-        auth()->logout();
+        Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
         
@@ -192,6 +211,9 @@ class DemoController extends Controller
             'failed_attempts' => cache()->get('demo_stats_failed', 0),
             'qr_codes_generated' => cache()->get('demo_stats_qr_generated', 0),
             'unique_visitors' => cache()->get('demo_stats_visitors', 0),
+            'total_users' => User::count(),
+            'demo_user_exists' => User::where('email', 'demo@example.com')->exists(),
+            'current_user' => Auth::check() ? Auth::user()->email : null,
         ];
         
         return response()->json([
@@ -225,18 +247,26 @@ class DemoController extends Controller
      */
     public function showMobileDemo(string $token): View
     {
-        // Validate token exists
-        if (!$this->scanLoginService->validateToken($token)) {
+        try {
+            // Validate token exists and is valid
+            if (!$this->scanLoginService->validateToken($token)) {
+                abort(404, 'Invalid or expired demo token');
+            }
+        } catch (\Exception $e) {
             abort(404, 'Invalid or expired demo token');
         }
+        
+        // Get demo user for testing
+        $demoUser = User::where('email', 'demo@example.com')->first();
         
         return view('demo.mobile-login', [
             'token' => $token,
             'demo_mode' => true,
             'test_credentials' => [
-                'email' => 'demo@example.com',
+                'email' => $demoUser ? $demoUser->email : 'demo@example.com',
                 'password' => 'password'
-            ]
+            ],
+            'demo_user_exists' => $demoUser !== null
         ]);
     }
 
@@ -251,23 +281,10 @@ class DemoController extends Controller
         ]);
 
         try {
-            $success = $this->scanLoginService->processLogin($token, [
-                'email' => $request->email,
-                'password' => $request->password,
-            ]);
-
-            if ($success) {
-                // Increment demo statistics
-                cache()->increment('demo_stats_success');
-                
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Demo login successful! You can now close this window.',
-                    'demo_info' => [
-                        'redirect_message' => 'Check your desktop browser - you should be automatically logged in!'
-                    ]
-                ]);
-            } else {
+            // Validate credentials against User model
+            $user = User::where('email', $request->email)->first();
+            
+            if (!$user || !Hash::check($request->password, $user->password)) {
                 // Increment failed attempts
                 cache()->increment('demo_stats_failed');
                 
@@ -281,6 +298,41 @@ class DemoController extends Controller
                         'hint' => 'Use the test credentials: demo@example.com / password'
                     ]
                 ], 401);
+            }
+
+            // Process login through scan login service with authenticated user
+            $success = $this->scanLoginService->processLogin($token, [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'name' => $user->name,
+            ]);
+
+            if ($success) {
+                // Increment demo statistics
+                cache()->increment('demo_stats_success');
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Demo login successful! You can now close this window.',
+                    'demo_info' => [
+                        'redirect_message' => 'Check your desktop browser - you should be automatically logged in!',
+                        'user' => [
+                            'name' => $user->name,
+                            'email' => $user->email
+                        ]
+                    ]
+                ]);
+            } else {
+                // Increment failed attempts
+                cache()->increment('demo_stats_failed');
+                
+                return response()->json([
+                    'success' => false,
+                    'error' => [
+                        'code' => 'LOGIN_PROCESSING_FAILED',
+                        'message' => 'Login credentials were valid but processing failed'
+                    ]
+                ], 400);
             }
         } catch (\Exception $e) {
             return response()->json([

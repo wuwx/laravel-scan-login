@@ -37,7 +37,6 @@ This demo application showcases the complete functionality of Laravel Scan Login
 1. **Install Dependencies**
    ```bash
    composer install
-   npm install
    ```
 
 2. **Configure Environment**
@@ -48,6 +47,7 @@ This demo application showcases the complete functionality of Laravel Scan Login
 
 3. **Setup Database**
    ```bash
+   touch database/demo.sqlite
    php artisan migrate
    php artisan db:seed
    ```
@@ -55,7 +55,6 @@ This demo application showcases the complete functionality of Laravel Scan Login
 4. **Start Development Server**
    ```bash
    php artisan serve
-   npm run dev
    ```
 
 5. **Visit Demo**

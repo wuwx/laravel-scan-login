@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Demo\Http\Controllers\DemoController;
+use App\Http\Controllers\DemoController;
 
 /*
 |--------------------------------------------------------------------------
@@ -12,6 +12,9 @@ use Demo\Http\Controllers\DemoController;
 | These routes showcase different implementations and use cases.
 |
 */
+
+// Include authentication routes
+require __DIR__.'/auth.php';
 
 // Demo home page
 Route::get('/', [DemoController::class, 'index'])->name('demo.index');
@@ -40,29 +43,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/demo/dashboard', [DemoController::class, 'dashboard'])->name('demo.dashboard');
 });
 
-// Demo logout
-Route::post('/demo/logout', [DemoController::class, 'logout'])->name('demo.logout');
+// Logout is now handled in routes/auth.php
 
-// Traditional login routes for demo
-Route::post('/login', function (Illuminate\Http\Request $request) {
-    $request->validate([
-        'email' => 'required|email',
-        'password' => 'required',
-    ]);
-
-    $credentials = $request->only('email', 'password');
-    $remember = $request->boolean('remember');
-
-    if (Auth::attempt($credentials, $remember)) {
-        $request->session()->regenerate();
-        
-        return redirect()->intended(route('demo.dashboard'));
-    }
-
-    return back()->withErrors([
-        'email' => 'The provided credentials do not match our records.',
-    ])->onlyInput('email');
-})->name('login');
+// Authentication routes are now handled in routes/auth.php
 
 // Fallback route for demo
 Route::fallback(function () {
