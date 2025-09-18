@@ -1,17 +1,17 @@
 {
-    "name": ":vendor_slug/:package_slug",
-    "description": ":package_description",
+    "name": "wuwx/laravel-scan-login",
+    "description": "Laravel Scan Login",
     "keywords": [
-        ":vendor_name",
+        "wuwx",
         "laravel",
-        ":package_slug"
+        "laravel-scan-login"
     ],
-    "homepage": "https://github.com/:vendor_slug/:package_slug",
+    "homepage": "https://github.com/wuwx/laravel-scan-login",
     "license": "MIT",
     "authors": [
         {
-            "name": ":author_name",
-            "email": "author@domain.com",
+            "name": "wuwx",
+            "email": "wuweixin@gmail.com",
             "role": "Developer"
         }
     ],
@@ -35,13 +35,13 @@
     },
     "autoload": {
         "psr-4": {
-            "VendorName\\Skeleton\\": "src/",
-            "VendorName\\Skeleton\\Database\\Factories\\": "database/factories/"
+            "Wuwx\\LaravelScanLogin\\": "src/",
+            "Wuwx\\LaravelScanLogin\\Database\\Factories\\": "database/factories/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "VendorName\\Skeleton\\Tests\\": "tests/",
+            "Wuwx\\LaravelScanLogin\\Tests\\": "tests/",
             "Workbench\\App\\": "workbench/app/"
         }
     },
@@ -63,10 +63,10 @@
     "extra": {
         "laravel": {
             "providers": [
-                "VendorName\\Skeleton\\SkeletonServiceProvider"
+                "Wuwx\\LaravelScanLogin\\LaravelScanLoginServiceProvider"
             ],
             "aliases": {
-                "Skeleton": "VendorName\\Skeleton\\Facades\\Skeleton"
+                "LaravelScanLogin": "Wuwx\\LaravelScanLogin\\Facades\\LaravelScanLogin"
             }
         }
     },

@@ -1,12 +1,12 @@
 <?php
 
-namespace VendorName\Skeleton\Commands;
+namespace Wuwx\LaravelScanLogin\Commands;
 
 use Illuminate\Console\Command;
 
-class SkeletonCommand extends Command
+class LaravelScanLoginCommand extends Command
 {
-    public $signature = 'skeleton';
+    public $signature = 'laravel-scan-login';
 
     public $description = 'My command';
 
