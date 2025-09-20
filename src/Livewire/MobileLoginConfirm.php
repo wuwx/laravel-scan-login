@@ -21,6 +21,16 @@ class MobileLoginConfirm extends Component
     public function mount($token)
     {
         $this->token = $token;
+        
+        if (!config('scan-login.enabled', true)) {
+            abort(403, '扫码登录功能已禁用');
+        }
+        
+        // Ensure user is authenticated
+        if (!Auth::check()) {
+            return redirect()->route('login');
+        }
+        
         $this->user = Auth::user();
         $this->loginTime = now()->format('Y-m-d H:i');
         $this->deviceInfo = $this->getDeviceInfo();
@@ -146,6 +156,11 @@ class MobileLoginConfirm extends Component
 
     public function render()
     {
-        return view('scan-login::livewire.mobile-login-confirm');
+        $layoutView = config('scan-login.mobile_layout_view', 'scan-login::layouts.mobile');
+        
+        return view('scan-login::livewire.mobile-login-confirm')
+            ->layout($layoutView, [
+                'title' => '扫码登录确认'
+            ]);
     }
 }

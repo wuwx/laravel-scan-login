@@ -1,51 +1,55 @@
-<div class="container">
-    <h1 class="title">扫码登录</h1>
-    <p class="subtitle">使用手机扫描下方二维码登录</p>
+<div class="scan-login-container">
+    <header class="scan-login-header">
+        <h1 class="scan-login-title">扫码登录</h1>
+        <p class="scan-login-subtitle">使用手机扫描下方二维码登录</p>
+    </header>
     
-    <div class="qr-container">
+    <div class="scan-login-qr-container">
         @if($status === 'loading')
-            <div class="loading">
-                <div class="spinner"></div>
+            <div class="scan-login-loading">
+                <div class="scan-login-spinner"></div>
                 <span>正在生成二维码...</span>
             </div>
         @elseif($qrCode)
-            <div class="qr-code">
+            <div class="scan-login-qr-code">
                 {!! $qrCode !!}
             </div>
         @else
-            <div class="loading">
+            <div class="scan-login-loading">
                 <span>二维码生成失败</span>
             </div>
         @endif
     </div>
     
-    <div class="instructions">
-        <p>1. 使用手机打开应用并登录</p>
-        <p>2. 扫描上方二维码</p>
-        <p>3. 在手机上确认登录</p>
+    <div class="scan-login-instructions">
+        <ol>
+            <li>使用手机打开应用并登录</li>
+            <li>扫描上方二维码</li>
+            <li>在手机上确认登录</li>
+        </ol>
     </div>
     
-    <div class="status {{ $status }}">
+    <div class="scan-login-status scan-login-status--{{ $status }}">
         {{ $statusMessage }}
     </div>
     
     @if($showRefreshButton)
-        <button wire:click="refreshQrCode" class="refresh-btn" wire:loading.attr="disabled">
+        <button wire:click="refreshQrCode" class="scan-login-btn scan-login-btn--refresh" wire:loading.attr="disabled">
             <span wire:loading.remove wire:target="refreshQrCode">刷新二维码</span>
             <span wire:loading wire:target="refreshQrCode">刷新中...</span>
         </button>
     @endif
     
     @if($showDiagnoseButton)
-        <button wire:click="diagnose" class="refresh-btn" style="background: #f59e0b;" wire:loading.attr="disabled">
+        <button wire:click="diagnose" class="scan-login-btn scan-login-btn--diagnose" wire:loading.attr="disabled">
             <span wire:loading.remove wire:target="diagnose">诊断问题</span>
             <span wire:loading wire:target="diagnose">诊断中...</span>
         </button>
     @endif
     
-    <div class="footer">
+    <footer class="scan-login-footer">
         二维码有效期：{{ $config['token_expiry_minutes'] ?? 5 }}分钟
-    </div>
+    </footer>
 </div>
 
 @script

@@ -42,8 +42,6 @@ class ScanLoginServiceProvider extends PackageServiceProvider
         $router->aliasMiddleware('scan-login.validate-token', ValidateTokenMiddleware::class);
         
         // Register Livewire components
-        \Livewire\Livewire::component('scan-login::qr-code-page', \Wuwx\LaravelScanLogin\Livewire\QrCodePage::class);
-        \Livewire\Livewire::component('scan-login::mobile-login-page', \Wuwx\LaravelScanLogin\Livewire\MobileLoginPage::class);
         \Livewire\Livewire::component('scan-login::qr-code-login', \Wuwx\LaravelScanLogin\Livewire\QrCodeLogin::class);
         \Livewire\Livewire::component('scan-login::mobile-login-confirm', \Wuwx\LaravelScanLogin\Livewire\MobileLoginConfirm::class);
         

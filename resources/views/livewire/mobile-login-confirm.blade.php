@@ -1,59 +1,59 @@
-<div class="login-container">
-    <div class="login-header">
-        <h1>扫码登录确认</h1>
-        <p>确认在此设备上登录您的账户</p>
-    </div>
+<div class="mobile-login-container">
+    <header class="mobile-login-header">
+        <h1 class="mobile-login-title">扫码登录确认</h1>
+        <p class="mobile-login-subtitle">确认在此设备上登录您的账户</p>
+    </header>
 
-    <div class="login-form">
+    <div class="mobile-login-form">
         @if($errorMessage)
-            <div class="alert alert-error">
+            <div class="mobile-login-alert mobile-login-alert--error">
                 <span>{{ $errorMessage }}</span>
             </div>
         @endif
 
         @if($status === 'ready' || $status === 'error')
             @if($user)
-                <div class="user-info">
-                    <div class="user-avatar">
-                        <div class="avatar-placeholder">
+                <div class="mobile-login-user-info">
+                    <div class="mobile-login-user-avatar">
+                        <div class="mobile-login-avatar-placeholder">
                             <span>{{ strtoupper(substr($user->name ?? 'U', 0, 1)) }}</span>
                         </div>
                     </div>
-                    <div class="user-details">
-                        <div class="user-name">{{ $user->name ?? '用户' }}</div>
-                        <div class="user-email">{{ $user->email ?? '' }}</div>
+                    <div class="mobile-login-user-details">
+                        <div class="mobile-login-user-name">{{ $user->name ?? '用户' }}</div>
+                        <div class="mobile-login-user-email">{{ $user->email ?? '' }}</div>
                     </div>
                 </div>
             @endif
 
-            <div class="login-info">
-                <div class="info-item">
-                    <div class="info-icon">🖥️</div>
-                    <div class="info-content">
-                        <div class="info-title">登录设备</div>
-                        <div class="info-value">{{ $deviceInfo }}</div>
+            <div class="mobile-login-info">
+                <div class="mobile-login-info-item">
+                    <div class="mobile-login-info-icon">🖥️</div>
+                    <div class="mobile-login-info-content">
+                        <div class="mobile-login-info-title">登录设备</div>
+                        <div class="mobile-login-info-value">{{ $deviceInfo }}</div>
                     </div>
                 </div>
-                <div class="info-item">
-                    <div class="info-icon">🌐</div>
-                    <div class="info-content">
-                        <div class="info-title">IP地址</div>
-                        <div class="info-value">{{ $ipAddress }}</div>
+                <div class="mobile-login-info-item">
+                    <div class="mobile-login-info-icon">🌐</div>
+                    <div class="mobile-login-info-content">
+                        <div class="mobile-login-info-title">IP地址</div>
+                        <div class="mobile-login-info-value">{{ $ipAddress }}</div>
                     </div>
                 </div>
-                <div class="info-item">
-                    <div class="info-icon">⏰</div>
-                    <div class="info-content">
-                        <div class="info-title">登录时间</div>
-                        <div class="info-value">{{ $loginTime }}</div>
+                <div class="mobile-login-info-item">
+                    <div class="mobile-login-info-icon">⏰</div>
+                    <div class="mobile-login-info-content">
+                        <div class="mobile-login-info-title">登录时间</div>
+                        <div class="mobile-login-info-value">{{ $loginTime }}</div>
                     </div>
                 </div>
             </div>
 
-            <div class="action-buttons">
+            <div class="mobile-login-actions">
                 <button 
                     type="button" 
-                    class="cancel-button" 
+                    class="mobile-login-btn mobile-login-btn--cancel" 
                     wire:click="cancelLogin"
                     wire:loading.attr="disabled"
                     @if($isSubmitting) disabled @endif
@@ -64,28 +64,28 @@
                 
                 <button 
                     type="button" 
-                    class="confirm-button" 
+                    class="mobile-login-btn mobile-login-btn--confirm" 
                     wire:click="confirmLogin"
                     wire:loading.attr="disabled"
                     @if($isSubmitting) disabled @endif
                 >
                     <span wire:loading.remove wire:target="confirmLogin">确认登录</span>
                     <span wire:loading wire:target="confirmLogin">
-                        <span class="button-spinner"></span>
+                        <span class="mobile-login-spinner"></span>
                         确认中...
                     </span>
                 </button>
             </div>
         @elseif($status === 'loading')
-            <div class="loading-container">
-                <div class="spinner"></div>
+            <div class="mobile-login-loading">
+                <div class="mobile-login-spinner"></div>
                 <p>正在加载登录信息...</p>
             </div>
         @elseif($status === 'success')
-            <div class="success-container">
-                <div class="success-icon"></div>
-                <div class="success-title">登录成功！</div>
-                <div class="success-message">
+            <div class="mobile-login-success">
+                <div class="mobile-login-success-icon">✓</div>
+                <div class="mobile-login-success-title">登录成功！</div>
+                <div class="mobile-login-success-message">
                     您已成功登录，桌面端将自动跳转。<br>
                     如果没有自动跳转，请返回桌面端页面。
                 </div>
@@ -93,9 +93,9 @@
         @endif
     </div>
 
-    <div class="footer-text">
+    <footer class="mobile-login-footer">
         安全提示：请确认这是您本人的登录请求，如有疑问请点击取消
-    </div>
+    </footer>
 </div>
 
 @script
@@ -132,36 +132,3 @@
     });
 </script>
 @endscript
-
-<style>
-    .loading-container {
-        text-align: center;
-        padding: 40px 20px;
-    }
-    
-    .spinner {
-        width: 40px;
-        height: 40px;
-        border: 4px solid #f3f3f3;
-        border-top: 4px solid #667eea;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-        margin: 0 auto 20px;
-    }
-    
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-    
-    .button-spinner {
-        display: inline-block;
-        width: 16px;
-        height: 16px;
-        border: 2px solid transparent;
-        border-top: 2px solid white;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-        margin-right: 8px;
-    }
-</style>
