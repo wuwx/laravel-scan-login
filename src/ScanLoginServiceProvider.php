@@ -7,6 +7,9 @@ use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schedule;
+use Wuwx\LaravelScanLogin\Livewire\QrCodeLogin;
+use Wuwx\LaravelScanLogin\Livewire\MobileLoginConfirm;
+use Wuwx\LaravelScanLogin\Models\ScanLoginToken;
 
 class ScanLoginServiceProvider extends PackageServiceProvider
 {
@@ -33,8 +36,8 @@ class ScanLoginServiceProvider extends PackageServiceProvider
     public function packageBooted(): void
     {
         // Register Livewire components
-        \Livewire\Livewire::component('scan-login::qr-code-login', \Wuwx\LaravelScanLogin\Livewire\QrCodeLogin::class);
-        \Livewire\Livewire::component('scan-login::mobile-login-confirm', \Wuwx\LaravelScanLogin\Livewire\MobileLoginConfirm::class);
+        \Livewire\Livewire::component('scan-login::qr-code-login', QrCodeLogin::class);
+        \Livewire\Livewire::component('scan-login::mobile-login-confirm', MobileLoginConfirm::class);
         
         // Schedule token cleanup using model:prune
         $this->scheduleTokenCleanup();
@@ -57,7 +60,7 @@ class ScanLoginServiceProvider extends PackageServiceProvider
         $schedule = config('scan-login.cleanup_schedule', '0 * * * *'); // Every hour
         
         Schedule::command('model:prune', [
-            '--model' => [\Wuwx\LaravelScanLogin\Models\ScanLoginToken::class],
+            '--model' => [ScanLoginToken::class],
             '--batch-size' => config('scan-login.cleanup_batch_size', 1000),
         ])
         ->cron($schedule)

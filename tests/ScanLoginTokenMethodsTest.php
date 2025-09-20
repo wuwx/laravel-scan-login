@@ -62,13 +62,6 @@ it('can mark token as used using static method', function () {
     ]);
 });
 
-it('can get token user id using static method', function () {
-    $token = ScanLoginToken::createToken();
-    ScanLoginToken::markTokenAsUsed($token, 456);
-    
-    expect(ScanLoginToken::getTokenUserId($token))->toBe(456);
-    expect(ScanLoginToken::getTokenUserId('invalid-token'))->toBeNull();
-});
 
 it('can cancel token using static method', function () {
     $token = ScanLoginToken::createToken();

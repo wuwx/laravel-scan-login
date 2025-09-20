@@ -3,16 +3,14 @@
 namespace Wuwx\LaravelScanLogin\Livewire;
 
 use Livewire\Component;
-
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Wuwx\LaravelScanLogin\Models\ScanLoginToken;
 
 class MobileLoginConfirm extends Component
 {
     public $token;
     public $user = null;
-    public $deviceInfo = '';
-    public $ipAddress = '获取中...';
     public $loginTime = '';
     public $status = 'loading';
     public $errorMessage = '';
@@ -33,10 +31,7 @@ class MobileLoginConfirm extends Component
 
         $this->user = Auth::user();
         $this->loginTime = now()->format('Y-m-d H:i');
-        $this->deviceInfo = $this->getDeviceInfo();
-
         $this->loadTokenInfo();
-        $this->loadIpAddress();
     }
 
     public function loadTokenInfo()
@@ -47,7 +42,7 @@ class MobileLoginConfirm extends Component
                 return;
             }
 
-            if (\Wuwx\LaravelScanLogin\Models\ScanLoginToken::validateToken($this->token)) {
+            if (ScanLoginToken::validateToken($this->token)) {
                 $this->status = 'ready';
             } else {
                 $this->setError('无效的登录链接，请重新扫码');
@@ -73,13 +68,13 @@ class MobileLoginConfirm extends Component
 
         try {
             // Validate token first
-            if (!\Wuwx\LaravelScanLogin\Models\ScanLoginToken::validateToken($this->token)) {
+            if (!ScanLoginToken::validateToken($this->token)) {
                 $this->setError('登录令牌无效或已过期');
                 return;
             }
 
             // Mark token as used
-            \Wuwx\LaravelScanLogin\Models\ScanLoginToken::markTokenAsUsed($this->token, $this->user->getAuthIdentifier());
+            ScanLoginToken::markTokenAsUsed($this->token, $this->user->getAuthIdentifier());
 
             $this->status = 'success';
 
@@ -110,7 +105,7 @@ class MobileLoginConfirm extends Component
         $this->isSubmitting = true;
 
         try {
-            \Wuwx\LaravelScanLogin\Models\ScanLoginToken::cancelToken($this->token);
+            ScanLoginToken::cancelToken($this->token);
         } catch (\Exception $e) {
             Log::error('Mobile login cancellation failed', [
                 'error' => $e->getMessage(),
@@ -122,29 +117,6 @@ class MobileLoginConfirm extends Component
         $this->dispatch('close-window');
     }
 
-    private function loadIpAddress()
-    {
-        // This would typically be done server-side or via a separate API call
-        // For now, we'll use a placeholder
-        $this->ipAddress = request()->ip() ?? '无法获取';
-    }
-
-    private function getDeviceInfo()
-    {
-        $userAgent = request()->userAgent();
-
-        if (str_contains($userAgent, 'iPhone') || str_contains($userAgent, 'iPad') || str_contains($userAgent, 'iPod')) {
-            return 'iOS 设备';
-        } elseif (str_contains($userAgent, 'Android')) {
-            return 'Android 设备';
-        } elseif (str_contains($userAgent, 'Windows')) {
-            return 'Windows 设备';
-        } elseif (str_contains($userAgent, 'Mac')) {
-            return 'Mac 设备';
-        } else {
-            return '未知设备';
-        }
-    }
 
     private function setError($message)
     {

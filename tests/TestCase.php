@@ -18,23 +18,8 @@ class TestCase extends Orchestra
 
         // 运行迁移
         $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
-        
-        // 创建用户表用于测试
-        $this->createUsersTable();
     }
 
-    protected function createUsersTable()
-    {
-        $this->app['db']->connection()->getSchemaBuilder()->create('users', function ($table) {
-            $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
-            $table->rememberToken();
-            $table->timestamps();
-        });
-    }
 
     protected function getPackageProviders($app)
     {

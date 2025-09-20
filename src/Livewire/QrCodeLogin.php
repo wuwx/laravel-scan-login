@@ -6,6 +6,7 @@ use Livewire\Component;
 use Livewire\Attributes\On;
 use Illuminate\Support\Facades\Log;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Wuwx\LaravelScanLogin\Models\ScanLoginToken;
 
 class QrCodeLogin extends Component
 {
@@ -40,7 +41,7 @@ class QrCodeLogin extends Component
             }
 
             // Create token with device information
-            $this->token = \Wuwx\LaravelScanLogin\Models\ScanLoginToken::createToken(request());
+            $this->token = ScanLoginToken::createToken(request());
             
             // Generate QR code
             $this->qrCode = $this->createQrCode($this->token);
@@ -64,7 +65,7 @@ class QrCodeLogin extends Component
         }
 
         try {
-            $status = \Wuwx\LaravelScanLogin\Models\ScanLoginToken::getTokenStatus($this->token);
+            $status = ScanLoginToken::getTokenStatus($this->token);
             
             if ($status === 'used') {
                 $this->status = 'success';
@@ -114,7 +115,7 @@ class QrCodeLogin extends Component
      */
     private function createQrCode(string $token): string
     {
-        $loginUrl = \Wuwx\LaravelScanLogin\Models\ScanLoginToken::generateLoginUrl($token);
+        $loginUrl = ScanLoginToken::generateLoginUrl($token);
         $size = config('scan-login.qr_code_size', 200);
         
         return QrCode::size($size)
