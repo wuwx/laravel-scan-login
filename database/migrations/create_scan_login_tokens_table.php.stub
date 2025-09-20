@@ -11,12 +11,15 @@ return new class extends Migration
         Schema::create('scan_login_tokens', function (Blueprint $table) {
             $table->id();
             $table->string('token')->unique();
-            $table->enum('status', ['pending', 'used', 'expired'])->default('pending');
-            $table->unsignedBigInteger('user_id')->nullable();
+            $table->string('status')->default('Wuwx\LaravelScanLogin\States\ScanLoginTokenStatePending');
+            $table->unsignedBigInteger('claimer_id')->nullable()->comment('扫码者用户ID');
+            $table->unsignedBigInteger('consumer_id')->nullable()->comment('最终消费token的用户ID');
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
             $table->timestamp('expires_at');
-            $table->timestamp('used_at')->nullable();
+            $table->timestamp('claimed_at')->nullable()->comment('被扫码/领用时间');
+            $table->timestamp('consumed_at')->nullable()->comment('已消费/完成登录时间');
+            $table->timestamp('cancelled_at')->nullable()->comment('已取消时间');
             $table->timestamps();
         });
     }

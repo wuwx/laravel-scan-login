@@ -14,10 +14,13 @@ class ScanLoginTokenFactory extends Factory
     {
         return [
             'token' => Str::random(64),
-            'status' => 'pending',
-            'user_id' => null,
+            'status' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStatePending',
+            'claimer_id' => null,
+            'consumer_id' => null,
             'expires_at' => now()->addMinutes(5),
-            'used_at' => null,
+            'claimed_at' => null,
+            'consumed_at' => null,
+            'cancelled_at' => null,
             // 生成二维码时的设备信息
             'ip_address' => $this->faker->ipv4(),
             'user_agent' => $this->faker->userAgent(),
@@ -35,25 +38,37 @@ class ScanLoginTokenFactory extends Factory
     }
 
     /**
-     * Indicate that the token is used.
+     * Indicate that the token is consumed.
      */
-    public function used(int $userId = 1): static
+    public function consumed(int $userId = 1): static
     {
         return $this->state(fn (array $attributes) => [
-            'status' => 'used',
-            'user_id' => $userId,
-            'used_at' => now(),
+            'status' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStateConsumed',
+            'consumer_id' => $userId,
+            'consumed_at' => now(),
         ]);
     }
 
     /**
-     * Indicate that the token is pending.
+     * Indicate that the token is claimed.
      */
-    public function pending(): static
+    public function claimed(int $claimerId = 1): static
     {
         return $this->state(fn (array $attributes) => [
-            'status' => 'pending',
-            'expires_at' => now()->addMinutes(5),
+            'status' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStateClaimed',
+            'claimer_id' => $claimerId,
+            'claimed_at' => now(),
+        ]);
+    }
+
+    /**
+     * Indicate that the token is cancelled.
+     */
+    public function cancelled(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStateCancelled',
+            'cancelled_at' => now(),
         ]);
     }
 

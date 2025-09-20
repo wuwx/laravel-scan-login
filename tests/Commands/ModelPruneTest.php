@@ -4,6 +4,8 @@ namespace Wuwx\LaravelScanLogin\Tests\Commands;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Wuwx\LaravelScanLogin\Models\ScanLoginToken;
+use Wuwx\LaravelScanLogin\States\ScanLoginTokenStatePending;
+use Wuwx\LaravelScanLogin\States\ScanLoginTokenStateExpired;
 use Wuwx\LaravelScanLogin\Tests\TestCase;
 use Carbon\Carbon;
 
@@ -15,20 +17,20 @@ class ModelPruneTest extends TestCase
     {
         // Create expired tokens
         ScanLoginToken::factory()->count(3)->create([
-            'status' => 'pending',
+            'status' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStatePending',
             'expires_at' => now()->subMinutes(10)
         ]);
 
         // Create non-expired tokens
         ScanLoginToken::factory()->count(2)->create([
-            'status' => 'pending',
+            'status' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStatePending',
             'expires_at' => now()->addMinutes(5)
         ]);
 
         // Create used tokens (not expired)
         ScanLoginToken::factory()->count(1)->create([
-            'status' => 'used',
-            'user_id' => 1,
+            'status' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStateConsumed',
+            'consumer_id' => 1,
             'expires_at' => now()->addMinutes(5)
         ]);
 
@@ -42,15 +44,15 @@ class ModelPruneTest extends TestCase
         $this->assertEquals(0, ScanLoginToken::expired()->count());
         
         // Verify non-expired tokens remain
-        $this->assertEquals(2, ScanLoginToken::pending()->count());
-        $this->assertEquals(1, ScanLoginToken::where('status', 'used')->count());
+        $this->assertEquals(2, ScanLoginToken::issued()->count());
+        $this->assertEquals(1, ScanLoginToken::where('status', 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStateConsumed')->count());
     }
 
     public function test_model_prune_removes_all_expired_tokens()
     {
         // Create many expired tokens
         ScanLoginToken::factory()->count(5)->create([
-            'status' => 'pending',
+            'status' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStatePending',
             'expires_at' => now()->subMinutes(10)
         ]);
 
@@ -68,7 +70,7 @@ class ModelPruneTest extends TestCase
     {
         // Create expired tokens
         ScanLoginToken::factory()->count(2)->create([
-            'status' => 'pending',
+            'status' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStatePending',
             'expires_at' => now()->subMinutes(10)
         ]);
 
@@ -87,13 +89,13 @@ class ModelPruneTest extends TestCase
     {
         // Create tokens with expired status
         ScanLoginToken::factory()->count(2)->create([
-            'status' => 'expired',
+            'status' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStateExpired',
             'expires_at' => now()->addMinutes(5) // Future expiry but status is expired
         ]);
 
         // Create tokens past expiry time
         ScanLoginToken::factory()->count(1)->create([
-            'status' => 'pending',
+            'status' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStatePending',
             'expires_at' => now()->subMinutes(10)
         ]);
 
@@ -111,7 +113,7 @@ class ModelPruneTest extends TestCase
     {
         // Create only non-expired tokens
         ScanLoginToken::factory()->count(3)->create([
-            'status' => 'pending',
+            'status' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStatePending',
             'expires_at' => now()->addMinutes(5)
         ]);
 
@@ -129,17 +131,17 @@ class ModelPruneTest extends TestCase
     {
         // Create test tokens
         ScanLoginToken::factory()->create([
-            'status' => 'expired',
+            'status' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStateExpired',
             'expires_at' => now()->addMinutes(5)
         ]);
         
         ScanLoginToken::factory()->create([
-            'status' => 'pending',
+            'status' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStatePending',
             'expires_at' => now()->subMinutes(10)
         ]);
         
         ScanLoginToken::factory()->create([
-            'status' => 'pending',
+            'status' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStatePending',
             'expires_at' => now()->addMinutes(5)
         ]);
 
@@ -154,7 +156,7 @@ class ModelPruneTest extends TestCase
     {
         // Create a mock to track if pruning method is called
         $token = ScanLoginToken::factory()->create([
-            'status' => 'pending',
+            'status' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStatePending',
             'expires_at' => now()->subMinutes(10)
         ]);
 

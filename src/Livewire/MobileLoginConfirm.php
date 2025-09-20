@@ -17,7 +17,7 @@ class MobileLoginConfirm extends Component
     public $errorMessage = '';
     public $isSubmitting = false;
     public $ipAddress = '';
-    public $agent = null;
+    private $agent = null;
 
     public function mount($token)
     {
@@ -137,6 +137,8 @@ class MobileLoginConfirm extends Component
 
     public function render()
     {
-        return view('scan-login::livewire.mobile-login-confirm');
+        return view('scan-login::livewire.mobile-login-confirm', [
+            'agent' => $this->agent,
+        ]);
     }
 }
