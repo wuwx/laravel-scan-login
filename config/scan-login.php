@@ -157,19 +157,24 @@ return [
     /*
     | Automatic Token Cleanup
     |
-    | Whether to automatically clean up expired tokens.
+    | Whether to automatically clean up expired tokens using Laravel's model:prune command.
+    | When enabled, expired tokens will be automatically deleted based on the schedule.
     |
     */
     'cleanup_expired_tokens' => env('SCAN_LOGIN_CLEANUP_EXPIRED_TOKENS', true),
 
     /*
-    | Cleanup Interval
+    | Cleanup Schedule
     |
-    | The interval in hours between automatic token cleanup runs.
-    | Valid range: 1-168 hours (1 week). Default: 24 hours.
+    | The cron schedule for automatic token cleanup using model:prune.
+    | Default: '0 * * * *' (every hour)
+    | Examples:
+    |   '0 * * * *' - Every hour
+    |   '0 0,6,12,18 * * *' - Every 6 hours
+    |   '0 0 * * *' - Daily at midnight
     |
     */
-    'cleanup_interval_hours' => (int) env('SCAN_LOGIN_CLEANUP_INTERVAL_HOURS', 24),
+    'cleanup_schedule' => env('SCAN_LOGIN_CLEANUP_SCHEDULE', '0 * * * *'),
 
     /*
     | Cleanup Batch Size
@@ -200,7 +205,7 @@ return [
         'qr_code_error_correction' => ['string', 'in:L,M,Q,H'],
         'rate_limit_per_minute' => ['integer', 'min:1', 'max:100'],
         'max_login_attempts' => ['integer', 'min:1', 'max:10'],
-        'cleanup_interval_hours' => ['integer', 'min:1', 'max:168'],
+        'cleanup_schedule' => ['string'],
         'cleanup_batch_size' => ['integer', 'min:100', 'max:10000'],
     ],
 ];

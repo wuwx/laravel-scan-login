@@ -108,6 +108,7 @@ class TokenManager
 
     /**
      * Clean up expired tokens.
+     * @deprecated Use Laravel's model:prune command instead
      */
     public function cleanup(): int
     {
@@ -116,6 +117,7 @@ class TokenManager
 
     /**
      * Clean up expired tokens in batches.
+     * @deprecated Use Laravel's model:prune command instead
      */
     public function cleanupExpiredTokens(int $batchSize = null): int
     {

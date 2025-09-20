@@ -4,11 +4,9 @@ namespace Wuwx\LaravelScanLogin;
 
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use Wuwx\LaravelScanLogin\Commands\ScanLoginCleanupCommand;
-
-
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schedule;
 
 class ScanLoginServiceProvider extends PackageServiceProvider
 {
@@ -24,7 +22,6 @@ class ScanLoginServiceProvider extends PackageServiceProvider
             ->hasConfigFile()
             ->hasViews()
             ->hasMigration('create_scan_login_tokens_table')
-            ->hasCommand(ScanLoginCleanupCommand::class)
             ->hasRoute('web');
     }
 
@@ -37,14 +34,38 @@ class ScanLoginServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
-
-        
         // Register Livewire components
         \Livewire\Livewire::component('scan-login::qr-code-login', \Wuwx\LaravelScanLogin\Livewire\QrCodeLogin::class);
         \Livewire\Livewire::component('scan-login::mobile-login-confirm', \Wuwx\LaravelScanLogin\Livewire\MobileLoginConfirm::class);
         
+        // Schedule token cleanup using model:prune
+        $this->scheduleTokenCleanup();
+        
         // Validate configuration on boot
         $this->validateConfiguration();
+    }
+
+    /**
+     * Schedule token cleanup using model:prune command.
+     */
+    protected function scheduleTokenCleanup(): void
+    {
+        if (!config('scan-login.enabled', true)) {
+            return;
+        }
+
+        // Schedule the model:prune command for ScanLoginToken
+        // Run every hour by default, configurable via config
+        $schedule = config('scan-login.cleanup_schedule', '0 * * * *'); // Every hour
+        
+        Schedule::command('model:prune', [
+            '--model' => [\Wuwx\LaravelScanLogin\Models\ScanLoginToken::class],
+            '--batch-size' => config('scan-login.cleanup_batch_size', 1000),
+        ])
+        ->cron($schedule)
+        ->name('scan-login-token-cleanup')
+        ->withoutOverlapping()
+        ->runInBackground();
     }
 
     /**

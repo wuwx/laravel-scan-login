@@ -5,13 +5,14 @@ namespace Wuwx\LaravelScanLogin\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Prunable;
 use Illuminate\Foundation\Auth\User;
 use Wuwx\LaravelScanLogin\Database\Factories\ScanLoginTokenFactory;
 use Carbon\Carbon;
 
 class ScanLoginToken extends Model
 {
-    use HasFactory;
+    use HasFactory, Prunable;
     
     protected $table = 'scan_login_tokens';
 
@@ -114,5 +115,27 @@ class ScanLoginToken extends Model
             'ip_address' => $this->ip_address,
             'user_agent' => $this->user_agent,
         ];
+    }
+
+    /**
+     * Get the prunable model query.
+     * This method is used by the model:prune command to determine which records to delete.
+     */
+    public function prunable()
+    {
+        return static::where(function ($query) {
+            $query->where('status', 'expired')
+                  ->orWhere('expires_at', '<=', now());
+        });
+    }
+
+    /**
+     * Prepare the model for pruning.
+     * This method is called before each model is deleted during pruning.
+     */
+    protected function pruning()
+    {
+        // Optional: Add any cleanup logic before deletion
+        // For example, logging, notifications, etc.
     }
 }
