@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Schedule;
 use Wuwx\LaravelScanLogin\Livewire\QrCodeLogin;
 use Wuwx\LaravelScanLogin\Livewire\MobileLoginConfirm;
 use Wuwx\LaravelScanLogin\Models\ScanLoginToken;
+use Wuwx\LaravelScanLogin\Services\ScanLoginTokenService;
 
 class ScanLoginServiceProvider extends PackageServiceProvider
 {
@@ -35,28 +36,13 @@ class ScanLoginServiceProvider extends PackageServiceProvider
         \Livewire\Livewire::component('scan-login::qr-code-login', QrCodeLogin::class);
         \Livewire\Livewire::component('scan-login::mobile-login-confirm', MobileLoginConfirm::class);
         
-        // Schedule token cleanup using model:prune
-        $this->scheduleTokenCleanup();
     }
 
-    /**
-     * Schedule token cleanup using model:prune command.
-     */
-    protected function scheduleTokenCleanup(): void
+    public function packageRegistered(): void
     {
-        if (!config('scan-login.enabled', true)) {
-            return;
-        }
-
-        // Schedule the model:prune command for ScanLoginToken
-        // Run every hour by default
-        Schedule::command('model:prune', [
-            '--model' => [ScanLoginToken::class],
-        ])
-        ->hourly()
-        ->name('scan-login-token-cleanup')
-        ->withoutOverlapping()
-        ->runInBackground();
+        // Register the service as singleton
+        $this->app->singleton(ScanLoginTokenService::class);
     }
+
 
 }

@@ -4,6 +4,8 @@ namespace Wuwx\LaravelScanLogin\States;
 
 class ScanLoginTokenStatePending extends ScanLoginTokenState
 {
+    public static $name = 'pending';
+    
     public function getColor(): string
     {
         return 'blue';

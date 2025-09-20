@@ -4,6 +4,8 @@ namespace Wuwx\LaravelScanLogin\States;
 
 class ScanLoginTokenStateCancelled extends ScanLoginTokenState
 {
+    public static $name = 'cancelled';
+
     public function getColor(): string
     {
         return 'red';

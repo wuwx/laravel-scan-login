@@ -4,6 +4,8 @@ namespace Wuwx\LaravelScanLogin\States;
 
 class ScanLoginTokenStateConsumed extends ScanLoginTokenState
 {
+    public static $name = 'consumed';
+    
     public function getColor(): string
     {
         return 'green';

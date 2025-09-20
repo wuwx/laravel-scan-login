@@ -14,7 +14,7 @@ class ScanLoginTokenFactory extends Factory
     {
         return [
             'token' => Str::random(64),
-            'status' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStatePending',
+            'state' => 'pending',
             'claimer_id' => null,
             'consumer_id' => null,
             'expires_at' => now()->addMinutes(5),
@@ -43,7 +43,7 @@ class ScanLoginTokenFactory extends Factory
     public function consumed(int $userId = 1): static
     {
         return $this->state(fn (array $attributes) => [
-            'status' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStateConsumed',
+            'state' => 'consumed',
             'consumer_id' => $userId,
             'consumed_at' => now(),
         ]);
@@ -55,7 +55,7 @@ class ScanLoginTokenFactory extends Factory
     public function claimed(int $claimerId = 1): static
     {
         return $this->state(fn (array $attributes) => [
-            'status' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStateClaimed',
+            'state' => 'claimed',
             'claimer_id' => $claimerId,
             'claimed_at' => now(),
         ]);
@@ -67,7 +67,7 @@ class ScanLoginTokenFactory extends Factory
     public function cancelled(): static
     {
         return $this->state(fn (array $attributes) => [
-            'status' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStateCancelled',
+            'state' => 'cancelled',
             'cancelled_at' => now(),
         ]);
     }

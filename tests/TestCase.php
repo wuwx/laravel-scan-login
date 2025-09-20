@@ -22,7 +22,7 @@ class TestCase extends Orchestra
         Schema::create('scan_login_tokens', function (Blueprint $table) {
             $table->id();
             $table->string('token')->unique();
-            $table->string('status')->default('Wuwx\LaravelScanLogin\States\ScanLoginTokenStatePending');
+            $table->string('state')->default('pending');
             $table->unsignedBigInteger('claimer_id')->nullable()->comment('扫码者用户ID');
             $table->unsignedBigInteger('consumer_id')->nullable()->comment('最终消费token的用户ID');
             $table->string('ip_address', 45)->nullable();

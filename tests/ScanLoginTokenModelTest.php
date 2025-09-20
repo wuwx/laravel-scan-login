@@ -19,16 +19,16 @@ beforeEach(function () {
 it('can create a scan login token', function () {
     $token = ScanLoginToken::create([
         'token' => 'test-token-123',
-        'status' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStatePending',
+        'state' => 'pending',
         'expires_at' => now()->addMinutes(5),
     ]);
 
     expect($token->token)->toBe('test-token-123');
-    expect($token->status)->toBeInstanceOf(ScanLoginTokenStatePending::class);
+    expect($token->state)->toBeInstanceOf(ScanLoginTokenStatePending::class);
     
     $this->assertDatabaseHas('scan_login_tokens', [
         'token' => 'test-token-123',
-        'status' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStatePending',
+        'state' => 'pending',
     ]);
 });
 
@@ -37,16 +37,20 @@ it('can create a scan login token', function () {
 it('can mark token as used', function () {
     $token = ScanLoginToken::create([
         'token' => 'test-token',
-        'status' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStatePending',
+        'state' => 'pending',
         'expires_at' => now()->addMinutes(5),
     ]);
 
     $userId = 123;
-    $token->markAsConsumed($userId);
+    $token->state->transitionTo(ScanLoginTokenStateConsumed::class);
+    $token->update([
+        'consumer_id' => $userId,
+        'consumed_at' => now(),
+    ]);
 
     $token->refresh();
 
-    expect($token->status)->toBeInstanceOf(ScanLoginTokenStateConsumed::class);
+    expect($token->state)->toBeInstanceOf(ScanLoginTokenStateConsumed::class);
     expect($token->consumer_id)->toBe($userId);
     expect($token->consumed_at)->not->toBeNull();
 });
@@ -54,41 +58,43 @@ it('can mark token as used', function () {
 it('can mark token as expired', function () {
     $token = ScanLoginToken::create([
         'token' => 'test-token',
-        'status' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStatePending',
+        'state' => 'pending',
         'expires_at' => now()->addMinutes(5),
     ]);
 
     // Test that token can be updated directly
-    $token->update(['status' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStateExpired']);
+    $token->update(['state' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStateExpired']);
 
     $token->refresh();
 
-    expect($token->status)->toBeInstanceOf(ScanLoginTokenStateExpired::class);
+    expect($token->state)->toBeInstanceOf(ScanLoginTokenStateExpired::class);
 });
 
 it('can scope pending tokens', function () {
     // Create pending valid token
     ScanLoginToken::create([
         'token' => 'pending-valid',
-        'status' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStatePending',
+        'state' => 'pending',
         'expires_at' => now()->addMinutes(5),
     ]);
 
     // Create pending expired token
     ScanLoginToken::create([
         'token' => 'pending-expired',
-        'status' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStatePending',
+        'state' => 'pending',
         'expires_at' => now()->subMinutes(1),
     ]);
 
     // Create used token
     ScanLoginToken::create([
         'token' => 'used-token',
-        'status' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStateConsumed',
+        'state' => 'consumed',
         'expires_at' => now()->addMinutes(5),
     ]);
 
-    $pendingTokens = ScanLoginToken::issued()->get();
+    $pendingTokens = ScanLoginToken::whereState('state', 'pending')
+        ->where('expires_at', '>', now())
+        ->get();
 
     expect($pendingTokens)->toHaveCount(1);
     expect($pendingTokens->first()->token)->toBe('pending-valid');
@@ -98,25 +104,28 @@ it('can scope expired tokens', function () {
     // Create expired token with expired status
     ScanLoginToken::create([
         'token' => 'expired-status',
-        'status' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStateExpired',
+        'state' => 'expired',
         'expires_at' => now()->addMinutes(5),
     ]);
 
     // Create token with past expiry date
     ScanLoginToken::create([
         'token' => 'expired-time',
-        'status' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStatePending',
+        'state' => 'pending',
         'expires_at' => now()->subMinutes(1),
     ]);
 
     // Create valid token
     ScanLoginToken::create([
         'token' => 'valid-token',
-        'status' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStatePending',
+        'state' => 'pending',
         'expires_at' => now()->addMinutes(5),
     ]);
 
-    $expiredTokens = ScanLoginToken::expired()->get();
+    $expiredTokens = ScanLoginToken::where(function ($query) {
+        $query->whereState('state', 'expired')
+              ->orWhere('expires_at', '<=', now());
+    })->get();
 
     expect($expiredTokens)->toHaveCount(2);
     expect($expiredTokens->pluck('token'))->toContain('expired-status');
@@ -126,7 +135,7 @@ it('can scope expired tokens', function () {
 it('casts dates properly', function () {
     $token = ScanLoginToken::create([
         'token' => 'test-token',
-        'status' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStatePending',
+        'state' => 'pending',
         'expires_at' => now()->addMinutes(5),
         'consumed_at' => now(),
     ]);
@@ -140,7 +149,7 @@ it('has correct fillable attributes', function () {
     
     $expectedFillable = [
         'token',
-        'status',
+        'state',
         'claimer_id',
         'consumer_id',
         'expires_at',
@@ -164,7 +173,7 @@ it('uses correct table name', function () {
 it('can create token with device information', function () {
     $token = ScanLoginToken::create([
         'token' => 'test-token-with-device',
-        'status' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStatePending',
+        'state' => 'pending',
         'expires_at' => now()->addMinutes(5),
         'ip_address' => '192.168.1.100',
         'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -177,7 +186,7 @@ it('can create token with device information', function () {
 it('can get device info', function () {
     $token = ScanLoginToken::create([
         'token' => 'device-info-token',
-        'status' => 'Wuwx\LaravelScanLogin\States\ScanLoginTokenStatePending',
+        'state' => 'pending',
         'expires_at' => now()->addMinutes(5),
         'ip_address' => '192.168.1.100',
         'user_agent' => 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X)',

@@ -41,7 +41,8 @@ class QrCodeLogin extends Component
             }
 
             // Create token with device information
-            $this->token = ScanLoginToken::createToken(request());
+            $service = app(\Wuwx\LaravelScanLogin\Services\ScanLoginTokenService::class);
+            $this->token = $service->createToken(request());
             
             // Generate QR code
             $this->qrCode = $this->createQrCode($this->token);
@@ -65,9 +66,21 @@ class QrCodeLogin extends Component
         }
 
         try {
-            $status = ScanLoginToken::getTokenStatus($this->token);
+            $tokenRecord = ScanLoginToken::where('token', $this->token)->first();
             
-            if ($status === 'used') {
+            if (!$tokenRecord) {
+                $this->setError('二维码已过期，请刷新');
+                return;
+            }
+            
+            if ($tokenRecord->expires_at->isPast()) {
+                $this->setError('二维码已过期，请刷新');
+                return;
+            }
+            
+            $status = $tokenRecord->state->getMorphClass();
+            
+            if ($status === 'consumed') {
                 $this->status = 'success';
                 $this->statusMessage = '登录成功！正在跳转...';
                 

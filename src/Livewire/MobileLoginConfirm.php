@@ -58,7 +58,8 @@ class MobileLoginConfirm extends Component
             $this->agent = new Agent();
             $this->agent->setUserAgent($tokenRecord->user_agent ?? '');
 
-            if (ScanLoginToken::validateToken($this->token)) {
+            $service = app(\Wuwx\LaravelScanLogin\Services\ScanLoginTokenService::class);
+            if ($service->validateToken($this->token)) {
                 $this->status = 'ready';
             } else {
                 $this->setError('登录令牌已过期，请重新扫码');
@@ -84,13 +85,22 @@ class MobileLoginConfirm extends Component
 
         try {
             // Validate token first
-            if (!ScanLoginToken::validateToken($this->token)) {
+            $service = app(\Wuwx\LaravelScanLogin\Services\ScanLoginTokenService::class);
+            if (!$service->validateToken($this->token)) {
                 $this->setError('登录令牌无效或已过期');
                 return;
             }
 
-            // Mark token as used
-            ScanLoginToken::markTokenAsUsed($this->token, $this->user->getAuthIdentifier());
+            // Mark token as consumed
+            $service = app(\Wuwx\LaravelScanLogin\Services\ScanLoginTokenService::class);
+            $tokenRecord = ScanLoginToken::where('token', $this->token)
+                ->whereIn('state', ['pending', 'claimed', 'consumed'])
+                ->where('expires_at', '>', now())
+                ->first();
+            
+            if ($tokenRecord) {
+                $service->markAsConsumed($tokenRecord, $this->user->getAuthIdentifier());
+            }
 
             $this->status = 'success';
 
@@ -118,7 +128,14 @@ class MobileLoginConfirm extends Component
         $this->isSubmitting = true;
 
         try {
-            ScanLoginToken::cancelToken($this->token);
+            $service = app(\Wuwx\LaravelScanLogin\Services\ScanLoginTokenService::class);
+            $tokenRecord = ScanLoginToken::where('token', $this->token)
+                ->whereIn('state', ['claimed', 'consumed'])
+                ->first();
+            
+            if ($tokenRecord) {
+                $service->markAsCancelled($tokenRecord);
+            }
         } catch (\Exception $e) {
             Log::error('Mobile login cancellation failed', [
                 'error' => $e->getMessage(),
