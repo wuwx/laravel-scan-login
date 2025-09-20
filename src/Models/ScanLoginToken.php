@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Prunable;
 use Wuwx\LaravelScanLogin\Database\Factories\ScanLoginTokenFactory;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
-use Carbon\Carbon;
 
 class ScanLoginToken extends Model
 {

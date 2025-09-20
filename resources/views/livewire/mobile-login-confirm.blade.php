@@ -31,7 +31,23 @@
                     <div class="mobile-login-info-icon">🖥️</div>
                     <div class="mobile-login-info-content">
                         <div class="mobile-login-info-title">登录设备</div>
-                        <div class="mobile-login-info-value">{{ $deviceInfo }}</div>
+                        <div class="mobile-login-info-value">
+                            @if($agent)
+                                @if($agent->device())
+                                    {{ $agent->device() }}
+                                @elseif($agent->isMobile())
+                                    {{ $agent->platform() ? $agent->platform() . ' 手机' : '移动设备' }}
+                                @elseif($agent->isTablet())
+                                    {{ $agent->platform() ? $agent->platform() . ' 平板' : '平板设备' }}
+                                @elseif($agent->isDesktop())
+                                    {{ $agent->platform() ? $agent->platform() . ' 设备' : '桌面设备' }}
+                                @else
+                                    未知设备
+                                @endif
+                            @else
+                                未知设备
+                            @endif
+                        </div>
                     </div>
                 </div>
                 <div class="mobile-login-info-item">
@@ -104,27 +120,3 @@
         安全提示：请确认这是您本人的登录请求，如有疑问请点击取消
     </footer>
 </div>
-
-@script
-<script>
-    // Handle window close
-    $wire.on('close-window', () => {
-        setTimeout(() => {
-            if (window.history.length > 1) {
-                window.history.back();
-            } else {
-                window.close();
-            }
-        }, $wire.status === 'success' ? 3000 : 500);
-    });
-    
-    // Handle keyboard shortcuts
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !$wire.isSubmitting && $wire.status === 'ready') {
-            $wire.confirmLogin();
-        } else if (e.key === 'Escape' && !$wire.isSubmitting) {
-            $wire.cancelLogin();
-        }
-    });
-</script>
-@endscript

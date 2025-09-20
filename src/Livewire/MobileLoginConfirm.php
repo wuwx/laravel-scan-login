@@ -6,6 +6,7 @@ use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Wuwx\LaravelScanLogin\Models\ScanLoginToken;
+use Jenssegers\Agent\Agent;
 
 class MobileLoginConfirm extends Component
 {
@@ -15,8 +16,8 @@ class MobileLoginConfirm extends Component
     public $status = 'loading';
     public $errorMessage = '';
     public $isSubmitting = false;
-    public $deviceInfo = '';
     public $ipAddress = '';
+    public $agent = null;
 
     public function mount($token)
     {
@@ -54,7 +55,8 @@ class MobileLoginConfirm extends Component
 
             // Extract device information from token record
             $this->ipAddress = $tokenRecord->ip_address ?? '未知';
-            $this->deviceInfo = $this->parseUserAgent($tokenRecord->user_agent ?? '');
+            $this->agent = new Agent();
+            $this->agent->setUserAgent($tokenRecord->user_agent ?? '');
 
             if (ScanLoginToken::validateToken($this->token)) {
                 $this->status = 'ready';
@@ -94,9 +96,6 @@ class MobileLoginConfirm extends Component
 
             // Use session flash message for success feedback
             session()->flash('scan_login_success', '登录成功！桌面端将自动跳转。');
-
-            // Auto-close the page using JavaScript (since we can't redirect to close)
-            $this->dispatch('close-window');
         } catch (\Exception $e) {
             Log::error('Mobile login confirmation failed', [
                 'error' => $e->getMessage(),
@@ -126,32 +125,9 @@ class MobileLoginConfirm extends Component
                 'token' => $this->token,
             ]);
         }
-
-        // Close the page after cancel
-        $this->dispatch('close-window');
     }
 
 
-    private function parseUserAgent(string $userAgent): string
-    {
-        if (empty($userAgent)) {
-            return '未知设备';
-        }
-
-        if (str_contains($userAgent, 'iPhone') || str_contains($userAgent, 'iPad') || str_contains($userAgent, 'iPod')) {
-            return 'iOS 设备';
-        } elseif (str_contains($userAgent, 'Android')) {
-            return 'Android 设备';
-        } elseif (str_contains($userAgent, 'Windows')) {
-            return 'Windows 设备';
-        } elseif (str_contains($userAgent, 'Mac')) {
-            return 'Mac 设备';
-        } elseif (str_contains($userAgent, 'Linux')) {
-            return 'Linux 设备';
-        } else {
-            return '未知设备';
-        }
-    }
 
     private function setError($message)
     {

@@ -28,10 +28,6 @@ class ScanLoginServiceProvider extends PackageServiceProvider
             ->hasRoute('web');
     }
 
-    public function packageRegistered(): void
-    {
-        // No services to register - all functionality is in the model
-    }
 
     public function packageBooted(): void
     {
@@ -41,9 +37,6 @@ class ScanLoginServiceProvider extends PackageServiceProvider
         
         // Schedule token cleanup using model:prune
         $this->scheduleTokenCleanup();
-        
-        // Validate configuration on boot
-        $this->validateConfiguration();
     }
 
     /**
@@ -56,39 +49,14 @@ class ScanLoginServiceProvider extends PackageServiceProvider
         }
 
         // Schedule the model:prune command for ScanLoginToken
-        // Run every hour by default, configurable via config
-        $schedule = config('scan-login.cleanup_schedule', '0 * * * *'); // Every hour
-        
+        // Run every hour by default
         Schedule::command('model:prune', [
             '--model' => [ScanLoginToken::class],
-            '--batch-size' => config('scan-login.cleanup_batch_size', 1000),
         ])
-        ->cron($schedule)
+        ->hourly()
         ->name('scan-login-token-cleanup')
         ->withoutOverlapping()
         ->runInBackground();
     }
 
-    /**
-     * Validate the package configuration.
-     */
-    protected function validateConfiguration(): void
-    {
-        if ($this->app->runningInConsole()) {
-            return; // Skip validation during console commands like config:cache
-        }
-
-        // Basic configuration validation
-        if (!config('scan-login.enabled', true)) {
-            return;
-        }
-
-        // Log warning if required configuration is missing
-        $requiredConfigs = ['token_expiry_minutes', 'qr_code_size'];
-        foreach ($requiredConfigs as $config) {
-            if (!config("scan-login.{$config}")) {
-                logger()->warning("Scan login configuration '{$config}' is not set, using default value");
-            }
-        }
-    }
 }
