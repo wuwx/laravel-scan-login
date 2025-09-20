@@ -15,6 +15,8 @@ class MobileLoginConfirm extends Component
     public $status = 'loading';
     public $errorMessage = '';
     public $isSubmitting = false;
+    public $deviceInfo = '';
+    public $ipAddress = '';
 
     public function mount($token)
     {
@@ -42,10 +44,22 @@ class MobileLoginConfirm extends Component
                 return;
             }
 
+            // Get token record to extract device information
+            $tokenRecord = ScanLoginToken::where('token', $this->token)->first();
+            
+            if (!$tokenRecord) {
+                $this->setError('无效的登录链接，请重新扫码');
+                return;
+            }
+
+            // Extract device information from token record
+            $this->ipAddress = $tokenRecord->ip_address ?? '未知';
+            $this->deviceInfo = $this->parseUserAgent($tokenRecord->user_agent ?? '');
+
             if (ScanLoginToken::validateToken($this->token)) {
                 $this->status = 'ready';
             } else {
-                $this->setError('无效的登录链接，请重新扫码');
+                $this->setError('登录令牌已过期，请重新扫码');
             }
         } catch (\Exception $e) {
             Log::error('Failed to load token info in mobile confirm', [
@@ -117,6 +131,27 @@ class MobileLoginConfirm extends Component
         $this->dispatch('close-window');
     }
 
+
+    private function parseUserAgent(string $userAgent): string
+    {
+        if (empty($userAgent)) {
+            return '未知设备';
+        }
+
+        if (str_contains($userAgent, 'iPhone') || str_contains($userAgent, 'iPad') || str_contains($userAgent, 'iPod')) {
+            return 'iOS 设备';
+        } elseif (str_contains($userAgent, 'Android')) {
+            return 'Android 设备';
+        } elseif (str_contains($userAgent, 'Windows')) {
+            return 'Windows 设备';
+        } elseif (str_contains($userAgent, 'Mac')) {
+            return 'Mac 设备';
+        } elseif (str_contains($userAgent, 'Linux')) {
+            return 'Linux 设备';
+        } else {
+            return '未知设备';
+        }
+    }
 
     private function setError($message)
     {
