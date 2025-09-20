@@ -42,24 +42,11 @@
         </button>
     @endif
     
-    @if($showDiagnoseButton)
-        <button wire:click="diagnose" class="scan-login-btn scan-login-btn--diagnose" wire:loading.attr="disabled">
-            <span wire:loading.remove wire:target="diagnose">诊断问题</span>
-            <span wire:loading wire:target="diagnose">诊断中...</span>
-        </button>
-    @endif
     
     <footer class="scan-login-footer">
         二维码有效期：{{ $tokenExpiryMinutes }}分钟
     </footer>
 
-    {{-- 显示诊断信息 --}}
-    @if(session('scan_login_diagnostics'))
-        <div class="scan-login-diagnostics">
-            <h3>诊断信息</h3>
-            <pre>{{ json_encode(session('scan_login_diagnostics'), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
-        </div>
-    @endif
 
     {{-- 显示错误信息 --}}
     @if(session('scan_login_error'))

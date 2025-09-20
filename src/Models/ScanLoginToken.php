@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Prunable;
 use Illuminate\Foundation\Auth\User;
 use Wuwx\LaravelScanLogin\Database\Factories\ScanLoginTokenFactory;
+use Illuminate\Support\Str;
+use Illuminate\Http\Request;
 use Carbon\Carbon;
 
 class ScanLoginToken extends Model
@@ -137,5 +139,169 @@ class ScanLoginToken extends Model
     {
         // Optional: Add any cleanup logic before deletion
         // For example, logging, notifications, etc.
+    }
+
+    /**
+     * Create a new login token.
+     */
+    public static function createToken(Request $request = null, array $deviceInfo = null): string
+    {
+        $token = Str::random(64);
+        $expiryMinutes = config('scan-login.token_expiry_minutes', 5);
+        $expiresAt = now()->addMinutes($expiryMinutes);
+        
+        // Extract device information
+        $deviceData = static::extractDeviceInfo($request, $deviceInfo);
+        
+        static::create(array_merge([
+            'token' => $token,
+            'status' => 'pending',
+            'expires_at' => $expiresAt,
+        ], $deviceData));
+
+        return $token;
+    }
+
+    /**
+     * Validate if a token exists and is valid.
+     */
+    public static function validateToken(string $token): bool
+    {
+        $tokenRecord = static::where('token', $token)->first();
+        
+        if (!$tokenRecord) {
+            return false;
+        }
+
+        return $tokenRecord->status === 'pending' && $tokenRecord->expires_at->isFuture();
+    }
+
+    /**
+     * Mark a token as used by a specific user.
+     */
+    public static function markTokenAsUsed(string $token, int $userId): bool
+    {
+        $tokenRecord = static::where('token', $token)
+            ->where('status', 'pending')
+            ->where('expires_at', '>', now())
+            ->first();
+        
+        if (!$tokenRecord) {
+            return false;
+        }
+
+        $tokenRecord->markAsUsed($userId);
+        return true;
+    }
+
+    /**
+     * Get the status of a token.
+     */
+    public static function getTokenStatus(string $token): string
+    {
+        $tokenRecord = static::where('token', $token)->first();
+        
+        if (!$tokenRecord) {
+            return 'not_found';
+        }
+
+        if ($tokenRecord->expires_at->isPast()) {
+            return 'expired';
+        }
+
+        return $tokenRecord->status;
+    }
+
+    /**
+     * Get the user ID associated with a used token.
+     */
+    public static function getTokenUserId(string $token): ?int
+    {
+        $tokenRecord = static::where('token', $token)
+            ->where('status', 'used')
+            ->first();
+        
+        return $tokenRecord ? $tokenRecord->user_id : null;
+    }
+
+    /**
+     * Cancel a token.
+     */
+    public static function cancelToken(string $token): bool
+    {
+        $tokenRecord = static::where('token', $token)
+            ->where('status', 'pending')
+            ->first();
+        
+        if (!$tokenRecord) {
+            return false;
+        }
+
+        $tokenRecord->update(['status' => 'cancelled']);
+        return true;
+    }
+
+    /**
+     * Extract device information for token generation.
+     */
+    private static function extractDeviceInfo(Request $request = null, array $deviceInfo = null): array
+    {
+        if ($deviceInfo) {
+            return [
+                'ip_address' => $deviceInfo['ip_address'] ?? null,
+                'user_agent' => $deviceInfo['user_agent'] ?? null,
+            ];
+        }
+
+        if ($request) {
+            return [
+                'ip_address' => static::getClientIp($request),
+                'user_agent' => $request->userAgent(),
+            ];
+        }
+
+        return [];
+    }
+
+    /**
+     * Get the client IP address.
+     */
+    private static function getClientIp(Request $request): string
+    {
+        // Check for IP from various headers (for load balancers, proxies, etc.)
+        $ipHeaders = [
+            'HTTP_CF_CONNECTING_IP',     // Cloudflare
+            'HTTP_CLIENT_IP',
+            'HTTP_X_FORWARDED_FOR',
+            'HTTP_X_FORWARDED',
+            'HTTP_X_CLUSTER_CLIENT_IP',
+            'HTTP_FORWARDED_FOR',
+            'HTTP_FORWARDED',
+            'REMOTE_ADDR'
+        ];
+
+        foreach ($ipHeaders as $header) {
+            if ($request->server($header)) {
+                $ip = $request->server($header);
+                // Handle comma-separated IPs (take the first one)
+                if (strpos($ip, ',') !== false) {
+                    $ip = trim(explode(',', $ip)[0]);
+                }
+                
+                if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+                    return $ip;
+                }
+            }
+        }
+
+        return $request->ip() ?? '0.0.0.0';
+    }
+
+    /**
+     * Generate the login URL for the given token.
+     */
+    public static function generateLoginUrl(string $token): string
+    {
+        return url(route('scan-login.mobile-login', ['token' => $token]));
     }
 }

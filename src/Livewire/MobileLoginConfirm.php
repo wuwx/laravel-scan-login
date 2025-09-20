@@ -47,9 +47,7 @@ class MobileLoginConfirm extends Component
                 return;
             }
 
-            $tokenManager = app(\Wuwx\LaravelScanLogin\Services\TokenManager::class);
-
-            if ($tokenManager->validate($this->token)) {
+            if (\Wuwx\LaravelScanLogin\Models\ScanLoginToken::validateToken($this->token)) {
                 $this->status = 'ready';
             } else {
                 $this->setError('无效的登录链接，请重新扫码');
@@ -74,16 +72,14 @@ class MobileLoginConfirm extends Component
         $this->errorMessage = '';
 
         try {
-            $tokenManager = app(\Wuwx\LaravelScanLogin\Services\TokenManager::class);
-
             // Validate token first
-            if (!$tokenManager->validate($this->token)) {
+            if (!\Wuwx\LaravelScanLogin\Models\ScanLoginToken::validateToken($this->token)) {
                 $this->setError('登录令牌无效或已过期');
                 return;
             }
 
             // Mark token as used
-            $tokenManager->markAsUsed($this->token, $this->user->getAuthIdentifier());
+            \Wuwx\LaravelScanLogin\Models\ScanLoginToken::markTokenAsUsed($this->token, $this->user->getAuthIdentifier());
 
             $this->status = 'success';
 
@@ -114,8 +110,7 @@ class MobileLoginConfirm extends Component
         $this->isSubmitting = true;
 
         try {
-            $tokenManager = app(\Wuwx\LaravelScanLogin\Services\TokenManager::class);
-            $tokenManager->cancel($this->token);
+            \Wuwx\LaravelScanLogin\Models\ScanLoginToken::cancelToken($this->token);
         } catch (\Exception $e) {
             Log::error('Mobile login cancellation failed', [
                 'error' => $e->getMessage(),

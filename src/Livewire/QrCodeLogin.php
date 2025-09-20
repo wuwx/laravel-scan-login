@@ -5,6 +5,7 @@ namespace Wuwx\LaravelScanLogin\Livewire;
 use Livewire\Component;
 use Livewire\Attributes\On;
 use Illuminate\Support\Facades\Log;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class QrCodeLogin extends Component
 {
@@ -13,7 +14,6 @@ class QrCodeLogin extends Component
     public $status = 'loading';
     public $statusMessage = '正在生成二维码...';
     public $showRefreshButton = false;
-    public $showDiagnoseButton = false;
     public $pollingInterval;
     public $tokenExpiryMinutes;
 
@@ -40,12 +40,10 @@ class QrCodeLogin extends Component
             }
 
             // Create token with device information
-            $tokenManager = app(\Wuwx\LaravelScanLogin\Services\TokenManager::class);
-            $this->token = $tokenManager->create(request());
+            $this->token = \Wuwx\LaravelScanLogin\Models\ScanLoginToken::createToken(request());
             
-            // Generate QR code directly
-            $qrGenerator = app(\Wuwx\LaravelScanLogin\Services\QrCodeGenerator::class);
-            $this->qrCode = $qrGenerator->generate($this->token);
+            // Generate QR code
+            $this->qrCode = $this->createQrCode($this->token);
             
             $this->status = 'pending';
             $this->statusMessage = '等待扫码登录...';
@@ -56,7 +54,6 @@ class QrCodeLogin extends Component
             ]);
             
             $this->setError('生成二维码失败，请稍后重试');
-            $this->showDiagnoseButton = true;
         }
     }
 
@@ -67,8 +64,7 @@ class QrCodeLogin extends Component
         }
 
         try {
-            $tokenManager = app(\Wuwx\LaravelScanLogin\Services\TokenManager::class);
-            $status = $tokenManager->getStatus($this->token);
+            $status = \Wuwx\LaravelScanLogin\Models\ScanLoginToken::getTokenStatus($this->token);
             
             if ($status === 'used') {
                 $this->status = 'success';
@@ -96,30 +92,6 @@ class QrCodeLogin extends Component
         $this->generateQrCode();
     }
 
-    public function diagnose()
-    {
-        try {
-            // Get diagnostic information
-            $diagnostics = [
-                'enabled' => config('scan-login.enabled', true),
-                'config' => [
-                    'token_expiry_minutes' => $this->tokenExpiryMinutes,
-                    'polling_interval' => $this->pollingInterval,
-                    'qr_code_size' => config('scan-login.qr_code_size', 200),
-                ],
-                'timestamp' => now()->toISOString(),
-            ];
-            
-            Log::info('Scan login diagnostics requested', $diagnostics);
-            
-            // Use session flash for diagnostics instead of JavaScript
-            session()->flash('scan_login_diagnostics', $diagnostics);
-            $this->dispatch('diagnostics-ready');
-        } catch (\Exception $e) {
-            Log::error('Diagnostics failed', ['error' => $e->getMessage()]);
-            session()->flash('scan_login_error', '诊断失败: ' . $e->getMessage());
-        }
-    }
 
     private function resetState()
     {
@@ -128,7 +100,6 @@ class QrCodeLogin extends Component
         $this->status = 'loading';
         $this->statusMessage = '正在生成二维码...';
         $this->showRefreshButton = false;
-        $this->showDiagnoseButton = false;
     }
 
     private function setError($message)
@@ -136,6 +107,19 @@ class QrCodeLogin extends Component
         $this->status = 'error';
         $this->statusMessage = $message;
         $this->showRefreshButton = true;
+    }
+
+    /**
+     * Create QR code for the given token.
+     */
+    private function createQrCode(string $token): string
+    {
+        $loginUrl = \Wuwx\LaravelScanLogin\Models\ScanLoginToken::generateLoginUrl($token);
+        $size = config('scan-login.qr_code_size', 200);
+        
+        return QrCode::size($size)
+            ->format('svg')
+            ->generate($loginUrl);
     }
 
     public function render()

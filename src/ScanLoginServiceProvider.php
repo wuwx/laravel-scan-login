@@ -27,9 +27,7 @@ class ScanLoginServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
-        // Register core services
-        $this->app->bind(\Wuwx\LaravelScanLogin\Services\TokenManager::class);
-        $this->app->bind(\Wuwx\LaravelScanLogin\Services\QrCodeGenerator::class);
+        // No services to register - all functionality is in the model
     }
 
     public function packageBooted(): void
