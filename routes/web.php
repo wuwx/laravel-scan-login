@@ -16,6 +16,7 @@ use Wuwx\LaravelScanLogin\Livewire\MobileLoginConfirm;
 
 Route::prefix('scan-login')
     ->name('scan-login.')
+    ->middleware(['web'])
     ->group(function () {
         // QR Code display page - Direct Livewire component for desktop login
         Route::get('/', QrCodeLogin::class)
@@ -23,7 +24,7 @@ Route::prefix('scan-login')
         
         // Mobile login confirmation page - Direct Livewire component for mobile confirmation
         Route::get('/{token}', MobileLoginConfirm::class)
-            ->middleware(['auth', 'scan-login.validate-token'])
+            ->middleware(['auth'])
             ->name('mobile-login')
             ->where('token', '[a-zA-Z0-9\-_]+');
     });

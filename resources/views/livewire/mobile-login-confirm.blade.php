@@ -87,8 +87,15 @@
                 <div class="mobile-login-success-title">登录成功！</div>
                 <div class="mobile-login-success-message">
                     您已成功登录，桌面端将自动跳转。<br>
-                    如果没有自动跳转，请返回桌面端页面。
+                    页面将在 3 秒后自动关闭。
                 </div>
+            </div>
+        @endif
+
+        {{-- 显示成功消息 --}}
+        @if(session('scan_login_success'))
+            <div class="mobile-login-alert mobile-login-alert--success">
+                {{ session('scan_login_success') }}
             </div>
         @endif
     </div>
@@ -100,31 +107,20 @@
 
 @script
 <script>
-    // Handle successful login
-    $wire.on('loginSuccess', () => {
+    // Handle window close
+    $wire.on('close-window', () => {
         setTimeout(() => {
             if (window.history.length > 1) {
                 window.history.back();
             } else {
                 window.close();
             }
-        }, 3000);
-    });
-    
-    // Handle cancelled login
-    $wire.on('loginCancelled', () => {
-        setTimeout(() => {
-            if (window.history.length > 1) {
-                window.history.back();
-            } else {
-                window.close();
-            }
-        }, 500);
+        }, $wire.status === 'success' ? 3000 : 500);
     });
     
     // Handle keyboard shortcuts
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !$wire.isSubmitting) {
+        if (e.key === 'Enter' && !$wire.isSubmitting && $wire.status === 'ready') {
             $wire.confirmLogin();
         } else if (e.key === 'Escape' && !$wire.isSubmitting) {
             $wire.cancelLogin();

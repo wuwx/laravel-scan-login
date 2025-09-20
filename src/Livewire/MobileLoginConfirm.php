@@ -87,8 +87,11 @@ class MobileLoginConfirm extends Component
             
             $this->status = 'success';
             
-            // Auto-close after success
-            $this->dispatch('loginSuccess');
+            // Use session flash message for success feedback
+            session()->flash('scan_login_success', '登录成功！桌面端将自动跳转。');
+            
+            // Auto-close the page using JavaScript (since we can't redirect to close)
+            $this->dispatch('close-window');
         } catch (\Exception $e) {
             Log::error('Mobile login confirmation failed', [
                 'error' => $e->getMessage(),
@@ -120,8 +123,8 @@ class MobileLoginConfirm extends Component
             ]);
         }
 
-        // Always close the page after cancel, regardless of success
-        $this->dispatch('loginCancelled');
+        // Close the page after cancel
+        $this->dispatch('close-window');
     }
 
     private function loadIpAddress()
@@ -156,7 +159,7 @@ class MobileLoginConfirm extends Component
 
     public function render()
     {
-        $layoutView = config('scan-login.mobile_layout_view', 'scan-login::layouts.mobile');
+        $layoutView = config('scan-login.mobile_layout_view', 'layouts.app');
         
         return view('scan-login::livewire.mobile-login-confirm')
             ->layout($layoutView, [

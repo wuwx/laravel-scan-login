@@ -98,22 +98,6 @@ return [
     'login_success_redirect' => env('SCAN_LOGIN_SUCCESS_REDIRECT', '/dashboard'),
 
     /*
-    |--------------------------------------------------------------------------
-    | View Configuration
-    |--------------------------------------------------------------------------
-    */
-
-    /*
-    | Layout Views
-    |
-    | The layout views to use for the scan login pages.
-    | You can customize these to match your application's design.
-    |
-    */
-    'layout_view' => env('SCAN_LOGIN_LAYOUT_VIEW', 'scan-login::layouts.app'),
-    'mobile_layout_view' => env('SCAN_LOGIN_MOBILE_LAYOUT_VIEW', 'scan-login::layouts.mobile'),
-
-    /*
     | Route Prefix
     |
     | The prefix for all scan login routes.

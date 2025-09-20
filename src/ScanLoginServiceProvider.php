@@ -5,7 +5,7 @@ namespace Wuwx\LaravelScanLogin;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Wuwx\LaravelScanLogin\Commands\ScanLoginCleanupCommand;
-use Wuwx\LaravelScanLogin\Middleware\ValidateTokenMiddleware;
+
 
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Route;
@@ -37,9 +37,7 @@ class ScanLoginServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
-        // Register middleware
-        $router = $this->app->make(Router::class);
-        $router->aliasMiddleware('scan-login.validate-token', ValidateTokenMiddleware::class);
+
         
         // Register Livewire components
         \Livewire\Livewire::component('scan-login::qr-code-login', \Wuwx\LaravelScanLogin\Livewire\QrCodeLogin::class);

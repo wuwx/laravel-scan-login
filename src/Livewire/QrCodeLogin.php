@@ -3,7 +3,7 @@
 namespace Wuwx\LaravelScanLogin\Livewire;
 
 use Livewire\Component;
-
+use Livewire\Attributes\On;
 use Illuminate\Support\Facades\Log;
 
 class QrCodeLogin extends Component
@@ -14,10 +14,8 @@ class QrCodeLogin extends Component
     public $statusMessage = '正在生成二维码...';
     public $showRefreshButton = false;
     public $showDiagnoseButton = false;
-    public $config = [];
-    public $isPolling = false;
-
-    protected $listeners = ['refreshQrCode', 'checkLoginStatus'];
+    public $pollingInterval;
+    public $tokenExpiryMinutes;
 
     public function mount()
     {
@@ -25,7 +23,9 @@ class QrCodeLogin extends Component
             abort(403, '扫码登录功能已禁用');
         }
         
-        $this->config = $this->getConfig();
+        $this->pollingInterval = config('scan-login.polling_interval_seconds', 3) . 's';
+        $this->tokenExpiryMinutes = config('scan-login.token_expiry_minutes', 5);
+        
         $this->generateQrCode();
     }
 
@@ -34,7 +34,7 @@ class QrCodeLogin extends Component
         try {
             $this->resetState();
             
-            if (!$this->isEnabled()) {
+            if (!config('scan-login.enabled', true)) {
                 $this->setError('扫码登录功能已禁用');
                 return;
             }
@@ -49,10 +49,6 @@ class QrCodeLogin extends Component
             
             $this->status = 'pending';
             $this->statusMessage = '等待扫码登录...';
-            $this->isPolling = true;
-            
-            // Start polling for status updates
-            $this->dispatch('startPolling');
         } catch (\Exception $e) {
             Log::error('QR code generation failed in Livewire component', [
                 'error' => $e->getMessage(),
@@ -66,7 +62,7 @@ class QrCodeLogin extends Component
 
     public function checkLoginStatus()
     {
-        if (!$this->token || !$this->isPolling) {
+        if (!$this->token || $this->status !== 'pending') {
             return;
         }
 
@@ -77,14 +73,12 @@ class QrCodeLogin extends Component
             if ($status === 'used') {
                 $this->status = 'success';
                 $this->statusMessage = '登录成功！正在跳转...';
-                $this->isPolling = false;
                 
-                // Redirect after a short delay
+                // Use Livewire's native redirect
                 $redirectUrl = config('scan-login.login_success_redirect', '/dashboard');
-                $this->dispatch('redirectTo', url: $redirectUrl);
+                $this->redirect($redirectUrl);
             } elseif ($status === 'expired') {
                 $this->setError('二维码已过期，请刷新');
-                $this->isPolling = false;
             }
         } catch (\Exception $e) {
             Log::error('Status check failed in Livewire component', [
@@ -107,34 +101,24 @@ class QrCodeLogin extends Component
         try {
             // Get diagnostic information
             $diagnostics = [
-                'enabled' => $this->isEnabled(),
-                'config' => $this->getConfig(),
+                'enabled' => config('scan-login.enabled', true),
+                'config' => [
+                    'token_expiry_minutes' => $this->tokenExpiryMinutes,
+                    'polling_interval' => $this->pollingInterval,
+                    'qr_code_size' => config('scan-login.qr_code_size', 200),
+                ],
                 'timestamp' => now()->toISOString(),
             ];
             
             Log::info('Scan login diagnostics requested', $diagnostics);
             
-            $this->dispatch('showDiagnostics', diagnostics: $diagnostics);
+            // Use session flash for diagnostics instead of JavaScript
+            session()->flash('scan_login_diagnostics', $diagnostics);
+            $this->dispatch('diagnostics-ready');
         } catch (\Exception $e) {
             Log::error('Diagnostics failed', ['error' => $e->getMessage()]);
-            $this->dispatch('showAlert', message: '诊断失败: ' . $e->getMessage());
+            session()->flash('scan_login_error', '诊断失败: ' . $e->getMessage());
         }
-    }
-
-    private function isEnabled(): bool
-    {
-        return (bool) config('scan-login.enabled', true);
-    }
-
-    private function getConfig(): array
-    {
-        return [
-            'enabled' => $this->isEnabled(),
-            'token_expiry_minutes' => (int) config('scan-login.token_expiry_minutes', 5),
-            'polling_interval_seconds' => (int) config('scan-login.polling_interval_seconds', 3),
-            'qr_code_size' => (int) config('scan-login.qr_code_size', 200),
-            'login_success_redirect' => (string) config('scan-login.login_success_redirect', '/dashboard'),
-        ];
     }
 
     private function resetState()
@@ -145,7 +129,6 @@ class QrCodeLogin extends Component
         $this->statusMessage = '正在生成二维码...';
         $this->showRefreshButton = false;
         $this->showDiagnoseButton = false;
-        $this->isPolling = false;
     }
 
     private function setError($message)
@@ -153,16 +136,10 @@ class QrCodeLogin extends Component
         $this->status = 'error';
         $this->statusMessage = $message;
         $this->showRefreshButton = true;
-        $this->isPolling = false;
     }
 
     public function render()
     {
-        $layoutView = config('scan-login.layout_view', 'scan-login::layouts.app');
-        
-        return view('scan-login::livewire.qr-code-login')
-            ->layout($layoutView, [
-                'title' => '扫码登录'
-            ]);
+        return view('scan-login::livewire.qr-code-login');
     }
 }

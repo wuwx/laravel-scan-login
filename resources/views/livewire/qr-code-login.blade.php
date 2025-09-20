@@ -1,4 +1,6 @@
-<div class="scan-login-container">
+<div class="scan-login-container" 
+     @if($status === 'pending') wire:poll.{{ $pollingInterval }}="checkLoginStatus" @endif>
+    
     <header class="scan-login-header">
         <h1 class="scan-login-title">扫码登录</h1>
         <p class="scan-login-subtitle">使用手机扫描下方二维码登录</p>
@@ -48,76 +50,21 @@
     @endif
     
     <footer class="scan-login-footer">
-        二维码有效期：{{ $config['token_expiry_minutes'] ?? 5 }}分钟
+        二维码有效期：{{ $tokenExpiryMinutes }}分钟
     </footer>
-</div>
 
-@script
-<script>
-    let pollingInterval = null;
-    
-    // Start polling when component is ready
-    $wire.on('startPolling', () => {
-        startPolling();
-    });
-    
-    // Handle redirects
-    $wire.on('redirectTo', (event) => {
-        setTimeout(() => {
-            window.location.href = event.url;
-        }, 1500);
-    });
-    
-    // Show diagnostics
-    $wire.on('showDiagnostics', (event) => {
-        console.log('Scan Login Diagnostics:', event.diagnostics);
-        alert('诊断完成，请查看浏览器控制台获取详细信息');
-    });
-    
-    // Show alerts
-    $wire.on('showAlert', (event) => {
-        alert(event.message);
-    });
-    
-    function startPolling() {
-        stopPolling(); // Clear any existing interval
-        
-        const pollingIntervalSeconds = @js($config['polling_interval_seconds'] ?? 3);
-        const maxDurationMinutes = @js($config['max_polling_duration_minutes'] ?? 10);
-        
-        pollingInterval = setInterval(() => {
-            $wire.checkLoginStatus();
-        }, pollingIntervalSeconds * 1000);
-        
-        // Stop polling after max duration
-        setTimeout(() => {
-            stopPolling();
-            $wire.set('status', 'error');
-            $wire.set('statusMessage', '二维码已过期，请刷新');
-            $wire.set('showRefreshButton', true);
-            $wire.set('isPolling', false);
-        }, maxDurationMinutes * 60 * 1000);
-    }
-    
-    function stopPolling() {
-        if (pollingInterval) {
-            clearInterval(pollingInterval);
-            pollingInterval = null;
-        }
-    }
-    
-    // Handle page visibility change
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
-            stopPolling();
-        } else if ($wire.isPolling) {
-            startPolling();
-        }
-    });
-    
-    // Cleanup on page unload
-    window.addEventListener('beforeunload', () => {
-        stopPolling();
-    });
-</script>
-@endscript
+    {{-- 显示诊断信息 --}}
+    @if(session('scan_login_diagnostics'))
+        <div class="scan-login-diagnostics">
+            <h3>诊断信息</h3>
+            <pre>{{ json_encode(session('scan_login_diagnostics'), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+        </div>
+    @endif
+
+    {{-- 显示错误信息 --}}
+    @if(session('scan_login_error'))
+        <div class="scan-login-alert scan-login-alert--error">
+            {{ session('scan_login_error') }}
+        </div>
+    @endif
+</div>
