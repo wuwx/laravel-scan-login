@@ -7,6 +7,7 @@ use Wuwx\LaravelScanLogin\States\ScanLoginTokenStateClaimed;
 use Wuwx\LaravelScanLogin\States\ScanLoginTokenStateConsumed;
 use Wuwx\LaravelScanLogin\States\ScanLoginTokenStateExpired;
 use Wuwx\LaravelScanLogin\States\ScanLoginTokenStateCancelled;
+use Wuwx\LaravelScanLogin\States\ScanLoginTokenStatePending;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -18,10 +19,9 @@ class ScanLoginTokenService
     public function markAsClaimed(ScanLoginToken $token, int $claimerId): void
     {
         $token->state->transitionTo(ScanLoginTokenStateClaimed::class);
-        $token->update([
-            'claimer_id' => $claimerId,
-            'claimed_at' => now(),
-        ]);
+        $token->claimer_id = $claimerId;
+        $token->claimed_at = now();
+        $token->save();
     }
 
     /**
@@ -29,11 +29,19 @@ class ScanLoginTokenService
      */
     public function markAsConsumed(ScanLoginToken $token, int $consumerId): void
     {
+        // First claim the token if it's still pending
+        if ($token->state->canTransitionTo(ScanLoginTokenStateClaimed::class)) {
+            $token->state->transitionTo(ScanLoginTokenStateClaimed::class);
+            $token->claimer_id = $consumerId;
+            $token->claimed_at = now();
+            $token->save();
+        }
+        
+        // Then consume it
         $token->state->transitionTo(ScanLoginTokenStateConsumed::class);
-        $token->update([
-            'consumer_id' => $consumerId,
-            'consumed_at' => now(),
-        ]);
+        $token->consumer_id = $consumerId;
+        $token->consumed_at = now();
+        $token->save();
     }
 
     /**
@@ -50,9 +58,8 @@ class ScanLoginTokenService
     public function markAsCancelled(ScanLoginToken $token): void
     {
         $token->state->transitionTo(ScanLoginTokenStateCancelled::class);
-        $token->update([
-            'cancelled_at' => now(),
-        ]);
+        $token->cancelled_at = now();
+        $token->save();
     }
 
     /**
@@ -78,11 +85,13 @@ class ScanLoginTokenService
             ];
         }
 
-        ScanLoginToken::create(array_merge([
+        $scanLoginToken = new ScanLoginToken();
+        $scanLoginToken->forceFill(array_merge([
             'token' => $token,
             'state' => 'pending',
             'expires_at' => $expiresAt,
         ], $deviceData));
+        $scanLoginToken->save();
 
         return $token;
     }

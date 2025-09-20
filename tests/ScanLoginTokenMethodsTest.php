@@ -84,10 +84,9 @@ it('can cancel token using service', function () {
     // Create a claimed token manually for testing cancellation
     $tokenRecord = ScanLoginToken::where('token', $token)->first();
     $tokenRecord->state->transitionTo(ScanLoginTokenStateClaimed::class);
-    $tokenRecord->update([
-        'claimer_id' => 1,
-        'claimed_at' => now(),
-    ]);
+    $tokenRecord->claimer_id = 1;
+    $tokenRecord->claimed_at = now();
+    $tokenRecord->save();
     
     // Then cancel it using service
     $service = app(\Wuwx\LaravelScanLogin\Services\ScanLoginTokenService::class);

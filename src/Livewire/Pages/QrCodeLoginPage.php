@@ -1,6 +1,6 @@
 <?php
 
-namespace Wuwx\LaravelScanLogin\Livewire;
+namespace Wuwx\LaravelScanLogin\Livewire\Pages;
 
 use Livewire\Component;
 use Livewire\Attributes\On;
@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Log;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Wuwx\LaravelScanLogin\Models\ScanLoginToken;
 
-class QrCodeLogin extends Component
+class QrCodeLoginPage extends Component
 {
     public $token = null;
     public $qrCode = null;
@@ -138,6 +138,6 @@ class QrCodeLogin extends Component
 
     public function render()
     {
-        return view('scan-login::livewire.qr-code-login');
+        return view('scan-login::livewire.pages.qr-code-login-page');
     }
 }

@@ -1,8 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Wuwx\LaravelScanLogin\Livewire\QrCodeLogin;
-use Wuwx\LaravelScanLogin\Livewire\MobileLoginConfirm;
+use Wuwx\LaravelScanLogin\Livewire\Pages\QrCodeLoginPage;
+use Wuwx\LaravelScanLogin\Livewire\Pages\MobileLoginConfirmPage;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,11 +19,11 @@ Route::prefix('scan-login')
     ->middleware(['web'])
     ->group(function () {
         // QR Code display page - Direct Livewire component for desktop login
-        Route::get('/', QrCodeLogin::class)
+        Route::get('/', QrCodeLoginPage::class)
             ->name('qr-code-page');
         
         // Mobile login confirmation page - Direct Livewire component for mobile confirmation
-        Route::get('/{token}', MobileLoginConfirm::class)
+        Route::get('/{token}', MobileLoginConfirmPage::class)
             ->middleware(['auth'])
             ->name('mobile-login')
             ->where('token', '[a-zA-Z0-9\-_]+');

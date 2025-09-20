@@ -14,18 +14,7 @@ class ScanLoginToken extends Model
 
     protected $table = 'scan_login_tokens';
 
-    protected $fillable = [
-        'token',
-        'state',
-        'claimer_id',
-        'consumer_id',
-        'expires_at',
-        'claimed_at',
-        'consumed_at',
-        'cancelled_at',
-        'ip_address',
-        'user_agent',
-    ];
+    protected $fillable = [];
 
     protected $casts = [
         'expires_at' => 'datetime',

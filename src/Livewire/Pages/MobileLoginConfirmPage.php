@@ -1,6 +1,6 @@
 <?php
 
-namespace Wuwx\LaravelScanLogin\Livewire;
+namespace Wuwx\LaravelScanLogin\Livewire\Pages;
 
 use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Log;
 use Wuwx\LaravelScanLogin\Models\ScanLoginToken;
 use Jenssegers\Agent\Agent;
 
-class MobileLoginConfirm extends Component
+class MobileLoginConfirmPage extends Component
 {
     public $token;
     public $user = null;
@@ -154,7 +154,7 @@ class MobileLoginConfirm extends Component
 
     public function render()
     {
-        return view('scan-login::livewire.mobile-login-confirm', [
+        return view('scan-login::livewire.pages.mobile-login-confirm-page', [
             'agent' => $this->agent,
         ]);
     }
