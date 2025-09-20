@@ -21,6 +21,9 @@ class ScanLoginToken extends Model
         'user_id',
         'expires_at',
         'used_at',
+        // 生成二维码时的设备信息
+        'ip_address',
+        'user_agent',
     ];
 
     protected $casts = [
@@ -100,5 +103,16 @@ class ScanLoginToken extends Model
     protected static function newFactory()
     {
         return ScanLoginTokenFactory::new();
+    }
+
+    /**
+     * Get the device information for the token generator.
+     */
+    public function getDeviceInfo(): array
+    {
+        return [
+            'ip_address' => $this->ip_address,
+            'user_agent' => $this->user_agent,
+        ];
     }
 }

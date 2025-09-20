@@ -18,6 +18,9 @@ class ScanLoginTokenFactory extends Factory
             'user_id' => null,
             'expires_at' => now()->addMinutes(5),
             'used_at' => null,
+            // 生成二维码时的设备信息
+            'ip_address' => $this->faker->ipv4(),
+            'user_agent' => $this->faker->userAgent(),
         ];
     }
 
@@ -53,4 +56,5 @@ class ScanLoginTokenFactory extends Factory
             'expires_at' => now()->addMinutes(5),
         ]);
     }
+
 }

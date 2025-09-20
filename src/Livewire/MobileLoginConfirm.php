@@ -21,20 +21,20 @@ class MobileLoginConfirm extends Component
     public function mount($token)
     {
         $this->token = $token;
-        
+
         if (!config('scan-login.enabled', true)) {
             abort(403, '扫码登录功能已禁用');
         }
-        
+
         // Ensure user is authenticated
         if (!Auth::check()) {
             return redirect()->route('login');
         }
-        
+
         $this->user = Auth::user();
         $this->loginTime = now()->format('Y-m-d H:i');
         $this->deviceInfo = $this->getDeviceInfo();
-        
+
         $this->loadTokenInfo();
         $this->loadIpAddress();
     }
@@ -48,7 +48,7 @@ class MobileLoginConfirm extends Component
             }
 
             $tokenManager = app(\Wuwx\LaravelScanLogin\Services\TokenManager::class);
-            
+
             if ($tokenManager->validate($this->token)) {
                 $this->status = 'ready';
             } else {
@@ -59,7 +59,7 @@ class MobileLoginConfirm extends Component
                 'error' => $e->getMessage(),
                 'token' => $this->token,
             ]);
-            
+
             $this->setError('获取登录信息失败');
         }
     }
@@ -75,7 +75,7 @@ class MobileLoginConfirm extends Component
 
         try {
             $tokenManager = app(\Wuwx\LaravelScanLogin\Services\TokenManager::class);
-            
+
             // Validate token first
             if (!$tokenManager->validate($this->token)) {
                 $this->setError('登录令牌无效或已过期');
@@ -84,12 +84,12 @@ class MobileLoginConfirm extends Component
 
             // Mark token as used
             $tokenManager->markAsUsed($this->token, $this->user->getAuthIdentifier());
-            
+
             $this->status = 'success';
-            
+
             // Use session flash message for success feedback
             session()->flash('scan_login_success', '登录成功！桌面端将自动跳转。');
-            
+
             // Auto-close the page using JavaScript (since we can't redirect to close)
             $this->dispatch('close-window');
         } catch (\Exception $e) {
@@ -98,7 +98,7 @@ class MobileLoginConfirm extends Component
                 'token' => $this->token,
                 'user_id' => $this->user->id,
             ]);
-            
+
             $this->setError('网络连接异常，请检查网络后重试');
         } finally {
             $this->isSubmitting = false;
@@ -137,7 +137,7 @@ class MobileLoginConfirm extends Component
     private function getDeviceInfo()
     {
         $userAgent = request()->userAgent();
-        
+
         if (str_contains($userAgent, 'iPhone') || str_contains($userAgent, 'iPad') || str_contains($userAgent, 'iPod')) {
             return 'iOS 设备';
         } elseif (str_contains($userAgent, 'Android')) {
@@ -159,11 +159,6 @@ class MobileLoginConfirm extends Component
 
     public function render()
     {
-        $layoutView = config('scan-login.mobile_layout_view', 'layouts.app');
-        
-        return view('scan-login::livewire.mobile-login-confirm')
-            ->layout($layoutView, [
-                'title' => '扫码登录确认'
-            ]);
+        return view('scan-login::livewire.mobile-login-confirm');
     }
 }

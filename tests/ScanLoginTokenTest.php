@@ -184,6 +184,9 @@ it('has correct fillable attributes', function () {
         'user_id',
         'expires_at',
         'used_at',
+        // 生成二维码时的设备信息
+        'ip_address',
+        'user_agent',
     ];
 
     expect($token->getFillable())->toBe($expectedFillable);
@@ -193,4 +196,34 @@ it('uses correct table name', function () {
     $token = new ScanLoginToken();
     
     expect($token->getTable())->toBe('scan_login_tokens');
+});
+
+it('can create token with device information', function () {
+    $token = ScanLoginToken::create([
+        'token' => 'test-token-with-device',
+        'status' => 'pending',
+        'expires_at' => now()->addMinutes(5),
+        'ip_address' => '192.168.1.100',
+        'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    ]);
+
+    expect($token->ip_address)->toBe('192.168.1.100');
+    expect($token->user_agent)->toBe('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+});
+
+it('can get device info', function () {
+    $token = ScanLoginToken::create([
+        'token' => 'device-info-token',
+        'status' => 'pending',
+        'expires_at' => now()->addMinutes(5),
+        'ip_address' => '192.168.1.100',
+        'user_agent' => 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X)',
+    ]);
+
+    $deviceInfo = $token->getDeviceInfo();
+
+    expect($deviceInfo)->toBe([
+        'ip_address' => '192.168.1.100',
+        'user_agent' => 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X)',
+    ]);
 });

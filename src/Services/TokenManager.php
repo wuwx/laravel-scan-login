@@ -5,6 +5,7 @@ namespace Wuwx\LaravelScanLogin\Services;
 use Wuwx\LaravelScanLogin\Models\ScanLoginToken;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 use Carbon\Carbon;
 
 class TokenManager
@@ -17,17 +18,20 @@ class TokenManager
     /**
      * Create a new login token.
      */
-    public function create(): string
+    public function create(Request $request = null, array $deviceInfo = null): string
     {
         $token = $this->generateSecureToken();
         $expiryMinutes = config('scan-login.token_expiry_minutes', 5);
         $expiresAt = now()->addMinutes($expiryMinutes);
         
-        ScanLoginToken::create([
+        // Extract device information
+        $deviceData = $this->extractDeviceInfo($request, $deviceInfo);
+        
+        ScanLoginToken::create(array_merge([
             'token' => $token,
             'status' => 'pending',
             'expires_at' => $expiresAt,
-        ]);
+        ], $deviceData));
 
         return $token;
     }
@@ -263,7 +267,77 @@ class TokenManager
         return $this->validate($token);
     }
 
+    /**
+     * Extract device information for token generation.
+     */
+    private function extractDeviceInfo(Request $request = null, array $deviceInfo = null): array
+    {
+        if ($deviceInfo) {
+            return [
+                'ip_address' => $deviceInfo['ip_address'] ?? null,
+                'user_agent' => $deviceInfo['user_agent'] ?? null,
+            ];
+        }
 
+        if ($request) {
+            return [
+                'ip_address' => $this->getClientIp($request),
+                'user_agent' => $request->userAgent(),
+            ];
+        }
 
+        return [];
+    }
 
+    /**
+     * Get the client IP address.
+     */
+    private function getClientIp(Request $request): string
+    {
+        // Check for IP from various headers (for load balancers, proxies, etc.)
+        $ipHeaders = [
+            'HTTP_CF_CONNECTING_IP',     // Cloudflare
+            'HTTP_CLIENT_IP',
+            'HTTP_X_FORWARDED_FOR',
+            'HTTP_X_FORWARDED',
+            'HTTP_X_CLUSTER_CLIENT_IP',
+            'HTTP_FORWARDED_FOR',
+            'HTTP_FORWARDED',
+            'REMOTE_ADDR'
+        ];
+
+        foreach ($ipHeaders as $header) {
+            if ($request->server($header)) {
+                $ip = $request->server($header);
+                // Handle comma-separated IPs (take the first one)
+                if (strpos($ip, ',') !== false) {
+                    $ip = trim(explode(',', $ip)[0]);
+                }
+                
+                if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+                    return $ip;
+                }
+            }
+        }
+
+        return $request->ip() ?? '0.0.0.0';
+    }
+
+    /**
+     * Get device statistics for tokens.
+     */
+    public function getDeviceStats(): array
+    {
+        $stats = DB::table('scan_login_tokens')
+            ->selectRaw('
+                COUNT(*) as total,
+                COUNT(DISTINCT ip_address) as unique_ips
+            ')
+            ->first();
+
+        return [
+            'total_tokens' => $stats->total ?? 0,
+            'unique_ips' => $stats->unique_ips ?? 0,
+        ];
+    }
 }

@@ -39,9 +39,9 @@ class QrCodeLogin extends Component
                 return;
             }
 
-            // Create token directly
+            // Create token with device information
             $tokenManager = app(\Wuwx\LaravelScanLogin\Services\TokenManager::class);
-            $this->token = $tokenManager->create();
+            $this->token = $tokenManager->create(request());
             
             // Generate QR code directly
             $qrGenerator = app(\Wuwx\LaravelScanLogin\Services\QrCodeGenerator::class);
