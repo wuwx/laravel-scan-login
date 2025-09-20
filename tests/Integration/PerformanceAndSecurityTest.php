@@ -4,15 +4,9 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Wuwx\LaravelScanLogin\Models\ScanLoginToken;
 use Wuwx\LaravelScanLogin\Services\TokenManager;
-use Illuminate\Foundation\Auth\User;
 use Illuminate\Contracts\Auth\UserProvider;
-use Mockery;
-
-class TestUser extends User
-{
-    protected $table = 'users';
-    protected $fillable = ['name', 'email', 'password'];
-}
+use Wuwx\LaravelScanLogin\Tests\Support\TestUser;
+use Mockery\MockInterface;
 
 uses(RefreshDatabase::class);
 
@@ -24,16 +18,7 @@ beforeEach(function () {
         'scan-login.polling_interval_seconds' => 1,
     ]);
 
-    // Create users table for testing
-    $this->app['db']->connection()->getSchemaBuilder()->create('users', function ($table) {
-        $table->id();
-        $table->string('name');
-        $table->string('email')->unique();
-        $table->timestamp('email_verified_at')->nullable();
-        $table->string('password');
-        $table->rememberToken();
-        $table->timestamps();
-    });
+    // Users table is already created in TestCase
 
     // Set up auth configuration
     config([
@@ -50,7 +35,7 @@ beforeEach(function () {
     ]);
 
     // Mock the UserProvider for the ScanLoginService
-    $userProvider = Mockery::mock(UserProvider::class);
+    $userProvider = \Mockery::mock(UserProvider::class);
     $this->app->instance(UserProvider::class, $userProvider);
     
     $userProvider->shouldReceive('retrieveByCredentials')
@@ -84,7 +69,7 @@ it('handles concurrent user scenarios efficiently', function () {
                 'data' => [
                     'token',
                     'qr_code',
-                    'mobile_url',
+                    'login_url',
                     'expires_at'
                 ]
             ]);
@@ -158,11 +143,17 @@ it('prevents token replay attacks', function () {
         'expires_at' => now()->addMinutes(5),
     ]);
 
-    // First login attempt should succeed
-    $response1 = $this->postJson("/scan-login/{$token->token}", [
-        'email' => 'test@example.com',
-        'password' => 'password123',
+    // Create and authenticate user
+    $user = new TestUser([
+        'name' => 'Test User',
+        'email' => 'replay-test@example.com',
+        'password' => Hash::make('password123'),
     ]);
+    $user->save();
+    
+    // First login confirmation should succeed
+    $this->actingAs($user);
+    $response1 = $this->postJson("/scan-login/{$token->token}");
 
     $response1->assertStatus(200);
 
@@ -172,10 +163,7 @@ it('prevents token replay attacks', function () {
     expect($token->used_at)->not->toBeNull();
 
     // Second attempt with same token should fail (replay attack prevention)
-    $response2 = $this->postJson("/scan-login/{$token->token}", [
-        'email' => 'test@example.com',
-        'password' => 'password123',
-    ]);
+    $response2 = $this->postJson("/scan-login/{$token->token}");
 
     $response2->assertStatus(400)
         ->assertJson([
@@ -312,13 +300,13 @@ it('prevents brute force attacks on token validation', function () {
     foreach ($invalidTokens as $invalidToken) {
         $response = $this->getJson("/scan-login/status/{$invalidToken}");
         
-        // Should return not found status, not error (to avoid information leakage)
+        // Should return not found error
         $response->assertStatus(200)
             ->assertJson([
-                'success' => true,
-                'data' => [
-                    'status' => 'not_found',
-                    'logged_in' => false,
+                'success' => false,
+                'error' => [
+                    'code' => 'TOKEN_NOT_FOUND',
+                    'message' => '登录令牌不存在',
                 ]
             ]);
     }
@@ -351,11 +339,17 @@ it('ensures secure password handling', function () {
         'expires_at' => now()->addMinutes(5),
     ]);
 
-    // Test that password is properly validated (not stored or logged)
-    $response = $this->postJson("/scan-login/{$token->token}", [
-        'email' => 'security@example.com',
-        'password' => 'secure-password-123',
+    // Create and authenticate user
+    $user = new TestUser([
+        'name' => 'Security User',
+        'email' => 'password-security@example.com',
+        'password' => Hash::make('secure-password-123'),
     ]);
+    $user->save();
+    
+    // Test login confirmation (user must be authenticated)
+    $this->actingAs($user);
+    $response = $this->postJson("/scan-login/{$token->token}");
 
     $response->assertStatus(200);
 
@@ -370,16 +364,15 @@ it('ensures secure password handling', function () {
         'expires_at' => now()->addMinutes(5),
     ]);
 
-    $wrongPasswordResponse = $this->postJson("/scan-login/{$token2->token}", [
-        'email' => 'security@example.com',
-        'password' => 'wrong-password',
-    ]);
+    // Clear authentication and test unauthenticated access (should fail)
+    $this->app['auth']->logout();
+    $wrongPasswordResponse = $this->postJson("/scan-login/{$token2->token}");
 
     $wrongPasswordResponse->assertStatus(401)
         ->assertJson([
             'success' => false,
             'error' => [
-                'code' => 'INVALID_CREDENTIALS',
+                'code' => 'UNAUTHENTICATED',
             ]
         ]);
 });

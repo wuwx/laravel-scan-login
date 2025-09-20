@@ -7,7 +7,7 @@ use Wuwx\LaravelScanLogin\Models\ScanLoginToken;
 use Wuwx\LaravelScanLogin\Tests\TestCase;
 use Carbon\Carbon;
 
-class LaravelScanLoginCommandTest extends TestCase
+class ScanLoginCleanupCommandTest extends TestCase
 {
     use RefreshDatabase;
 

@@ -22,7 +22,6 @@ We highly appreciate you sending us a postcard from your hometown, mentioning wh
 - PHP 8.4+
 - Laravel 11.0+ or 12.0+
 - HTTPS (required for production)
-- Redis or Memcached (recommended for caching)
 
 ## Installation
 
@@ -76,11 +75,58 @@ SCAN_LOGIN_RATE_LIMIT_PER_MINUTE=10
 # UI Configuration
 SCAN_LOGIN_POLLING_INTERVAL_SECONDS=3
 SCAN_LOGIN_QR_CODE_SIZE=200
+
+# Layout Customization (Optional)
+SCAN_LOGIN_LAYOUT_VIEW=scan-login::layouts.app
+SCAN_LOGIN_MOBILE_LAYOUT_VIEW=scan-login::layouts.mobile
 ```
+
+## Architecture
+
+This package is built with **Livewire 3** for a modern, reactive user experience:
+
+- **Server-side state management** - No complex JavaScript required
+- **Real-time updates** - Automatic polling and status synchronization  
+- **Secure by default** - Built-in CSRF protection and validation
+- **Mobile-optimized** - Responsive design for all devices
+- **Customizable** - Easy to theme and integrate with your app
+
+The package includes Livewire as a dependency and uses Livewire components for all user interfaces.
 
 ## Quick Start
 
-### Basic Implementation
+After installation, users can immediately access `/scan-login` to see the QR code page.
+
+### Add to Your App
+
+Add a scan login link to your navigation or login page:
+
+```blade
+<a href="{{ route('scan-login.qr-code-page') }}" class="btn btn-primary">
+    <i class="fas fa-qrcode"></i> Scan to Login
+</a>
+```
+
+### How It Works
+
+1. **Desktop**: User visits `/scan-login` and sees a QR code
+2. **Mobile**: User scans QR code with their logged-in mobile device  
+3. **Confirm**: User confirms login on mobile device
+4. **Success**: Desktop automatically logs in and redirects
+
+For detailed usage instructions, see [USAGE_GUIDE.md](USAGE_GUIDE.md).
+
+## Documentation
+
+- 📖 [Usage Guide](USAGE_GUIDE.md) - Complete usage instructions
+- ⚡ [Livewire Architecture](LIVEWIRE_INTEGRATION.md) - Technical architecture details  
+- 🔄 [Migration Guide](MIGRATION_GUIDE.md) - Upgrading from previous versions
+
+### Option 2: Custom Implementation
+
+If you need more control, you can implement your own QR code display:
+
+#### Basic Implementation
 
 1. **Add QR Code to Your Login Page**
 
@@ -259,7 +305,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Wuwx\LaravelScanLogin\Services\ScanLoginService;
-use Wuwx\LaravelScanLogin\Facades\LaravelScanLogin;
+use Wuwx\LaravelScanLogin\Facades\ScanLogin;
 
 class CustomLoginController extends Controller
 {
@@ -286,7 +332,7 @@ class CustomLoginController extends Controller
     
     public function checkCustomStatus(string $token)
     {
-        $status = LaravelScanLogin::checkLoginStatus($token);
+        $status = ScanLogin::checkLoginStatus($token);
         
         return response()->json($status);
     }
@@ -339,10 +385,6 @@ return [
 
 ```php
 return [
-    // Caching
-    'cache_store' => env('SCAN_LOGIN_CACHE_STORE', 'default'),
-    'cache_prefix' => env('SCAN_LOGIN_CACHE_PREFIX', 'scan_login'),
-    
     // Token cleanup
     'cleanup_expired_tokens' => env('SCAN_LOGIN_CLEANUP_EXPIRED_TOKENS', true),
     'cleanup_interval_hours' => env('SCAN_LOGIN_CLEANUP_INTERVAL_HOURS', 24),
@@ -394,19 +436,21 @@ protected function schedule(Schedule $schedule)
    SCAN_LOGIN_LOG_FAILED_ATTEMPTS=true
    ```
 
-5. **Use Redis for better performance**:
-   ```env
-   SCAN_LOGIN_CACHE_STORE=redis
-   ```
-
 ## Troubleshooting
+
+### Quick Diagnostics
+
+If you encounter issues, visit `/scan-login/api/diagnose` or use the diagnostic button on the QR code page to get detailed system information.
 
 ### Common Issues
 
 **QR Code Not Displaying**
 - Ensure the SimpleSoftwareIO/simple-qrcode package is installed
-- Check that the routes are properly registered
-- Verify HTTPS configuration in production
+- Check that the routes are properly registered  
+- Verify database migrations have been run
+- Check Laravel logs for detailed error messages
+
+For detailed troubleshooting steps, see [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 
 **Mobile Login Not Working**
 - Check CSRF token configuration

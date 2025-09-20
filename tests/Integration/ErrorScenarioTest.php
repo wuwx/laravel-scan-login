@@ -3,15 +3,9 @@
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Wuwx\LaravelScanLogin\Models\ScanLoginToken;
-use Illuminate\Foundation\Auth\User;
 use Illuminate\Contracts\Auth\UserProvider;
-use Mockery;
-
-class TestUser extends User
-{
-    protected $table = 'users';
-    protected $fillable = ['name', 'email', 'password'];
-}
+use Wuwx\LaravelScanLogin\Tests\Support\TestUser;
+use Mockery\MockInterface;
 
 uses(RefreshDatabase::class);
 
@@ -23,16 +17,7 @@ beforeEach(function () {
         'scan-login.polling_interval_seconds' => 1,
     ]);
 
-    // Create users table for testing
-    $this->app['db']->connection()->getSchemaBuilder()->create('users', function ($table) {
-        $table->id();
-        $table->string('name');
-        $table->string('email')->unique();
-        $table->timestamp('email_verified_at')->nullable();
-        $table->string('password');
-        $table->rememberToken();
-        $table->timestamps();
-    });
+    // Users table is already created in TestCase
 
     // Set up auth configuration
     config([
@@ -55,7 +40,7 @@ beforeEach(function () {
     ]);
 
     // Mock the UserProvider for the ScanLoginService
-    $userProvider = Mockery::mock(UserProvider::class);
+    $userProvider = \Mockery::mock(UserProvider::class);
     $this->app->instance(UserProvider::class, $userProvider);
     
     // Set up the mock to return users when needed
@@ -79,7 +64,7 @@ it('handles expired token scenario', function () {
     ]);
 
     // Try to access mobile login page with expired token
-    $response = $this->get("/scan-login/{$expiredToken->token}");
+    $response = $this->getJson("/scan-login/{$expiredToken->token}");
     
     $response->assertStatus(400)
         ->assertJson([
@@ -89,11 +74,17 @@ it('handles expired token scenario', function () {
             ]
         ]);
 
-    // Try to submit login with expired token
-    $loginResponse = $this->postJson("/scan-login/{$expiredToken->token}", [
+    // Try to submit login confirmation with expired token (user authenticated)
+    $user = new TestUser([
+        'name' => 'Test User',
         'email' => 'test@example.com',
-        'password' => 'password123',
+        'password' => Hash::make('password123'),
     ]);
+    $user->save();
+    
+    $this->actingAs($user);
+    
+    $loginResponse = $this->postJson("/scan-login/{$expiredToken->token}");
 
     $loginResponse->assertStatus(400)
         ->assertJson([
@@ -108,15 +99,15 @@ it('handles expired token scenario', function () {
     
     $statusResponse->assertStatus(200)
         ->assertJson([
-            'success' => true,
-            'data' => [
-                'status' => 'expired',
-                'logged_in' => false,
+            'success' => false,
+            'error' => [
+                'code' => 'TOKEN_EXPIRED',
+                'message' => '登录令牌已过期，请刷新二维码',
             ]
         ]);
 });
 
-it('handles invalid credentials scenario', function () {
+it('handles unauthenticated user scenario', function () {
     // Create a valid token
     $token = ScanLoginToken::create([
         'token' => 'valid-token-123',
@@ -124,26 +115,15 @@ it('handles invalid credentials scenario', function () {
         'expires_at' => now()->addMinutes(5),
     ]);
 
-    // Create a test user
-    $user = new TestUser([
-        'name' => 'Test User',
-        'email' => 'test@example.com',
-        'password' => Hash::make('correct-password'),
-    ]);
-    $user->save();
-
-    // Try to login with wrong password
-    $response = $this->postJson("/scan-login/{$token->token}", [
-        'email' => 'test@example.com',
-        'password' => 'wrong-password',
-    ]);
+    // Try to confirm login without being authenticated
+    $response = $this->postJson("/scan-login/{$token->token}");
 
     $response->assertStatus(401)
         ->assertJson([
             'success' => false,
             'error' => [
-                'code' => 'INVALID_CREDENTIALS',
-                'message' => '用户名或密码错误',
+                'code' => 'UNAUTHENTICATED',
+                'message' => '请先在手机端登录',
             ]
         ]);
 
@@ -151,28 +131,13 @@ it('handles invalid credentials scenario', function () {
     $token->refresh();
     expect($token->status)->toBe('pending');
     expect($token->user_id)->toBeNull();
-
-    // Try to login with non-existent user
-    $response2 = $this->postJson("/scan-login/{$token->token}", [
-        'email' => 'nonexistent@example.com',
-        'password' => 'any-password',
-    ]);
-
-    $response2->assertStatus(401)
-        ->assertJson([
-            'success' => false,
-            'error' => [
-                'code' => 'INVALID_CREDENTIALS',
-                'message' => '用户名或密码错误',
-            ]
-        ]);
 });
 
 it('handles invalid token format scenario', function () {
     // Try to access with completely invalid token
-    $response = $this->get('/scan-login/invalid-token-format');
+    $response = $this->getJson('/scan-login/invalid-token-format');
     
-    $response->assertStatus(400)
+    $response->assertStatus(404)
         ->assertJson([
             'success' => false,
             'error' => [
@@ -185,10 +150,10 @@ it('handles invalid token format scenario', function () {
     
     $statusResponse->assertStatus(200)
         ->assertJson([
-            'success' => true,
-            'data' => [
-                'status' => 'not_found',
-                'logged_in' => false,
+            'success' => false,
+            'error' => [
+                'code' => 'TOKEN_NOT_FOUND',
+                'message' => '登录令牌不存在',
             ]
         ]);
 });
@@ -212,7 +177,7 @@ it('handles already used token scenario', function () {
     ]);
 
     // Try to access mobile login page with used token
-    $response = $this->get("/scan-login/{$usedToken->token}");
+    $response = $this->getJson("/scan-login/{$usedToken->token}");
     
     $response->assertStatus(400)
         ->assertJson([
@@ -222,11 +187,10 @@ it('handles already used token scenario', function () {
             ]
         ]);
 
-    // Try to submit login with used token
-    $loginResponse = $this->postJson("/scan-login/{$usedToken->token}", [
-        'email' => 'test@example.com',
-        'password' => 'password123',
-    ]);
+    // Try to submit login confirmation with used token (user authenticated)
+    $this->actingAs($user);
+    
+    $loginResponse = $this->postJson("/scan-login/{$usedToken->token}");
 
     $loginResponse->assertStatus(400)
         ->assertJson([
@@ -237,7 +201,7 @@ it('handles already used token scenario', function () {
         ]);
 });
 
-it('handles missing required fields scenario', function () {
+it('handles authentication required scenario', function () {
     // Create a valid token
     $token = ScanLoginToken::create([
         'token' => 'valid-token-123',
@@ -245,30 +209,17 @@ it('handles missing required fields scenario', function () {
         'expires_at' => now()->addMinutes(5),
     ]);
 
-    // Try to submit login without email
-    $response = $this->postJson("/scan-login/{$token->token}", [
-        'password' => 'password123',
-    ]);
+    // Try to confirm login without authentication
+    $response = $this->postJson("/scan-login/{$token->token}");
 
-    $response->assertStatus(422)
-        ->assertJsonValidationErrors(['email']);
-
-    // Try to submit login without password
-    $response2 = $this->postJson("/scan-login/{$token->token}", [
-        'email' => 'test@example.com',
-    ]);
-
-    $response2->assertStatus(422)
-        ->assertJsonValidationErrors(['password']);
-
-    // Try to submit login with invalid email format
-    $response3 = $this->postJson("/scan-login/{$token->token}", [
-        'email' => 'invalid-email-format',
-        'password' => 'password123',
-    ]);
-
-    $response3->assertStatus(422)
-        ->assertJsonValidationErrors(['email']);
+    $response->assertStatus(401)
+        ->assertJson([
+            'success' => false,
+            'error' => [
+                'code' => 'UNAUTHENTICATED',
+                'message' => '请先在手机端登录',
+            ]
+        ]);
 });
 
 it('handles disabled feature scenario', function () {
@@ -307,10 +258,15 @@ it('handles disabled feature scenario', function () {
         ]);
 
     // Try to process mobile login when feature is disabled
-    $loginResponse = $this->postJson("/scan-login/{$token->token}", [
+    $user = new TestUser([
+        'name' => 'Test User',
         'email' => 'test@example.com',
-        'password' => 'password123',
+        'password' => Hash::make('password123'),
     ]);
+    $user->save();
+    $this->actingAs($user);
+    
+    $loginResponse = $this->postJson("/scan-login/{$token->token}");
 
     $loginResponse->assertStatus(403)
         ->assertJson([
@@ -365,11 +321,11 @@ it('handles concurrent login attempts scenario', function () {
         'expires_at' => now()->addMinutes(5),
     ]);
 
-    // Simulate first login attempt
-    $response1 = $this->postJson("/scan-login/{$token->token}", [
-        'email' => 'test@example.com',
-        'password' => 'password123',
-    ]);
+    // Authenticate as the user
+    $this->actingAs($user);
+    
+    // Simulate first login confirmation attempt
+    $response1 = $this->postJson("/scan-login/{$token->token}");
 
     // First attempt should succeed
     $response1->assertStatus(200)
@@ -380,11 +336,8 @@ it('handles concurrent login attempts scenario', function () {
             ]
         ]);
 
-    // Simulate second concurrent login attempt
-    $response2 = $this->postJson("/scan-login/{$token->token}", [
-        'email' => 'test@example.com',
-        'password' => 'password123',
-    ]);
+    // Simulate second concurrent login confirmation attempt
+    $response2 = $this->postJson("/scan-login/{$token->token}");
 
     // Second attempt should fail because token is already used
     $response2->assertStatus(400)
@@ -406,7 +359,7 @@ it('provides proper error feedback for user experience', function () {
         'expires_at' => now()->subMinutes(10),
     ]);
 
-    $response = $this->get("/scan-login/{$expiredToken->token}");
+    $response = $this->getJson("/scan-login/{$expiredToken->token}");
     
     $response->assertStatus(400);
     $errorData = $response->json();

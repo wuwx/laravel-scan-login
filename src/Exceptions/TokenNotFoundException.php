@@ -9,10 +9,9 @@ class TokenNotFoundException extends ScanLoginException
 {
     public function __construct(
         string $message = '登录令牌不存在或无效',
-        array $details = [],
         int $code = 404,
         ?\Exception $previous = null
     ) {
-        parent::__construct($message, 'TOKEN_NOT_FOUND', $details, $code, $previous);
+        parent::__construct($message, $code, $previous);
     }
 }

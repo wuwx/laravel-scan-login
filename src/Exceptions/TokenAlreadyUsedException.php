@@ -9,10 +9,9 @@ class TokenAlreadyUsedException extends ScanLoginException
 {
     public function __construct(
         string $message = '登录令牌已被使用，请重新生成二维码',
-        array $details = [],
         int $code = 409,
         ?\Exception $previous = null
     ) {
-        parent::__construct($message, 'TOKEN_ALREADY_USED', $details, $code, $previous);
+        parent::__construct($message, $code, $previous);
     }
 }

@@ -4,16 +4,10 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Wuwx\LaravelScanLogin\Models\ScanLoginToken;
-use Illuminate\Foundation\Auth\User;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Contracts\Auth\UserProvider;
-use Mockery;
-
-class TestUser extends User
-{
-    protected $table = 'users';
-    protected $fillable = ['name', 'email', 'password'];
-}
+use Wuwx\LaravelScanLogin\Tests\Support\TestUser;
+use Mockery\MockInterface;
 
 uses(RefreshDatabase::class);
 
@@ -25,16 +19,7 @@ beforeEach(function () {
         'scan-login.polling_interval_seconds' => 1,
     ]);
 
-    // Create users table for testing
-    $this->app['db']->connection()->getSchemaBuilder()->create('users', function ($table) {
-        $table->id();
-        $table->string('name');
-        $table->string('email')->unique();
-        $table->timestamp('email_verified_at')->nullable();
-        $table->string('password');
-        $table->rememberToken();
-        $table->timestamps();
-    });
+    // Users table is already created in TestCase
 
     // Set up auth configuration
     config([
@@ -57,7 +42,7 @@ beforeEach(function () {
     ]);
 
     // Mock the UserProvider for the ScanLoginService
-    $userProvider = Mockery::mock(UserProvider::class);
+    $userProvider = \Mockery::mock(UserProvider::class);
     $this->app->instance(UserProvider::class, $userProvider);
     
     // Set up the mock to return users when needed
@@ -69,6 +54,11 @@ beforeEach(function () {
     $userProvider->shouldReceive('validateCredentials')
         ->andReturnUsing(function ($user, $credentials) {
             return $user && Hash::check($credentials['password'], $user->password);
+        });
+    
+    $userProvider->shouldReceive('retrieveById')
+        ->andReturnUsing(function ($id) {
+            return TestUser::find($id);
         });
 });
 
@@ -90,7 +80,7 @@ it('completes full end to end login flow', function () {
             'data' => [
                 'token',
                 'qr_code',
-                'mobile_url',
+                'login_url',
                 'expires_at'
             ]
         ]);
@@ -99,7 +89,7 @@ it('completes full end to end login flow', function () {
     expect($responseData['success'])->toBeTrue();
     
     $token = $responseData['data']['token'];
-    $mobileUrl = $responseData['data']['mobile_url'];
+    $mobileUrl = $responseData['data']['login_url'];
 
     // Verify token was created in database
     $this->assertDatabaseHas('scan_login_tokens', [
@@ -126,11 +116,9 @@ it('completes full end to end login flow', function () {
         ->assertViewIs('scan-login::mobile-login')
         ->assertViewHas('token', $token);
 
-    // Step 5: Mobile端 - Submit login credentials
-    $loginResponse = $this->postJson("/scan-login/{$token}", [
-        'email' => 'test@example.com',
-        'password' => 'password123',
-    ]);
+    // Step 5: Mobile端 - Submit login confirmation (user must be authenticated)
+    $this->actingAs($user);
+    $loginResponse = $this->postJson("/scan-login/{$token}");
 
     $loginResponse->assertStatus(200)
         ->assertJson([
@@ -154,9 +142,8 @@ it('completes full end to end login flow', function () {
         ->assertJson([
             'success' => true,
             'data' => [
-                'status' => 'used',
-                'logged_in' => true,
-                'user_id' => $user->id,
+                'status' => 'completed',
+                'message' => '登录成功',
                 'redirect_url' => config('scan-login.login_success_redirect', '/dashboard'),
             ]
         ]);
@@ -168,8 +155,8 @@ it('completes full end to end login flow', function () {
         ->assertJson([
             'success' => true,
             'data' => [
-                'status' => 'used',
-                'logged_in' => true,
+                'status' => 'completed',
+                'message' => '登录成功',
             ]
         ]);
 });
@@ -203,11 +190,8 @@ it('handles desktop and mobile interaction simulation', function () {
         'data' => ['status' => 'pending', 'logged_in' => false]
     ]);
 
-    // Simulate mobile login
-    $mobileLoginResponse = $mobileSession->postJson("/scan-login/{$token}", [
-        'email' => 'mobile@example.com',
-        'password' => 'secret123',
-    ]);
+    // Simulate mobile login confirmation (user must be authenticated)
+    $mobileLoginResponse = $mobileSession->actingAs($user)->postJson("/scan-login/{$token}");
     
     $mobileLoginResponse->assertStatus(200)
         ->assertJson(['success' => true]);
@@ -217,9 +201,11 @@ it('handles desktop and mobile interaction simulation', function () {
     $pollingResponse2->assertJson([
         'success' => true,
         'data' => [
-            'status' => 'used',
-            'logged_in' => true,
-            'user_id' => $user->id
+            'status' => 'completed',
+            'message' => '登录成功',
+            'user' => [
+                'id' => $user->id
+            ]
         ]
     ]);
 });
@@ -246,10 +232,8 @@ it('maintains proper token lifecycle throughout flow', function () {
     expect($tokenModel->isPending())->toBeTrue();
 
     // Process mobile login and verify token state changes
-    $this->postJson("/scan-login/{$token}", [
-        'email' => 'lifecycle@example.com',
-        'password' => 'lifecycle123',
-    ]);
+    $this->actingAs($user);
+    $this->postJson("/scan-login/{$token}");
 
     $tokenModel->refresh();
     expect($tokenModel->status)->toBe('used');
@@ -258,10 +242,7 @@ it('maintains proper token lifecycle throughout flow', function () {
     expect($tokenModel->isPending())->toBeFalse();
 
     // Verify token cannot be reused
-    $reuseResponse = $this->postJson("/scan-login/{$token}", [
-        'email' => 'lifecycle@example.com',
-        'password' => 'lifecycle123',
-    ]);
+    $reuseResponse = $this->postJson("/scan-login/{$token}");
 
     $reuseResponse->assertStatus(400)
         ->assertJson([
@@ -281,18 +262,18 @@ it('handles qr code generation with proper data structure', function () {
     // Verify all required fields are present
     expect($data)->toHaveKey('token');
     expect($data)->toHaveKey('qr_code');
-    expect($data)->toHaveKey('mobile_url');
+    expect($data)->toHaveKey('login_url');
     expect($data)->toHaveKey('expires_at');
 
     // Verify token format
     expect($data['token'])->toBeString();
     expect(strlen($data['token']))->toBeGreaterThan(20); // Should be a substantial random string
 
-    // Verify QR code is base64 encoded SVG
-    expect($data['qr_code'])->toStartWith('data:image/svg+xml;base64,');
+    // Verify QR code is SVG format
+    expect($data['qr_code'])->toContain('<svg');
 
     // Verify mobile URL format
-    expect($data['mobile_url'])->toContain("/scan-login/{$data['token']}");
+    expect($data['login_url'])->toContain("/scan-login/{$data['token']}");
 
     // Verify expires_at is a valid timestamp
     expect($data['expires_at'])->toBeString();
@@ -315,11 +296,9 @@ it('properly handles authentication flow integration', function () {
     // Ensure no user is authenticated initially
     expect(Auth::check())->toBeFalse();
 
-    // Process login
-    $loginResponse = $this->postJson("/scan-login/{$token}", [
-        'email' => 'auth@example.com',
-        'password' => 'authpass',
-    ]);
+    // Process login confirmation (user must be authenticated)
+    $this->actingAs($user);
+    $loginResponse = $this->postJson("/scan-login/{$token}");
 
     $loginResponse->assertStatus(200);
 
@@ -332,9 +311,8 @@ it('properly handles authentication flow integration', function () {
     $statusResponse->assertJson([
         'success' => true,
         'data' => [
-            'status' => 'used',
-            'logged_in' => true,
-            'user_id' => $user->id,
+            'status' => 'completed',
+            'message' => '登录成功',
         ]
     ]);
 });

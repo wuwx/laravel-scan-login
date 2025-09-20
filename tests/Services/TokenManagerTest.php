@@ -9,23 +9,6 @@ use Illuminate\Database\Schema\Blueprint;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    // Create the table manually for testing
-    Schema::create('scan_login_tokens', function (Blueprint $table) {
-        $table->id();
-        $table->string('token')->unique();
-        $table->enum('status', ['pending', 'used', 'expired'])->default('pending');
-        $table->unsignedBigInteger('user_id')->nullable();
-        $table->timestamp('expires_at');
-        $table->timestamp('used_at')->nullable();
-        $table->timestamps();
-
-        // Indexes for performance
-        $table->index('token');
-        $table->index('status');
-        $table->index('expires_at');
-        $table->index(['status', 'expires_at']);
-    });
-    
     $this->tokenManager = new TokenManager();
 });
 

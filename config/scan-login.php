@@ -98,21 +98,20 @@ return [
     'login_success_redirect' => env('SCAN_LOGIN_SUCCESS_REDIRECT', '/dashboard'),
 
     /*
-    | Mobile Login View
-    |
-    | The view to use for the mobile login page.
-    | You can customize this to match your application's design.
-    |
+    |--------------------------------------------------------------------------
+    | View Configuration
+    |--------------------------------------------------------------------------
     */
-    'mobile_login_view' => env('SCAN_LOGIN_MOBILE_VIEW', 'scan-login::mobile-login'),
 
     /*
-    | QR Code View
+    | Layout Views
     |
-    | The view to use for displaying the QR code component.
+    | The layout views to use for the scan login pages.
+    | You can customize these to match your application's design.
     |
     */
-    'qr_code_view' => env('SCAN_LOGIN_QR_CODE_VIEW', 'scan-login::qr-code'),
+    'layout_view' => env('SCAN_LOGIN_LAYOUT_VIEW', 'scan-login::layouts.app'),
+    'mobile_layout_view' => env('SCAN_LOGIN_MOBILE_LAYOUT_VIEW', 'scan-login::layouts.mobile'),
 
     /*
     | Route Prefix
@@ -197,58 +196,7 @@ return [
     */
     'cleanup_batch_size' => (int) env('SCAN_LOGIN_CLEANUP_BATCH_SIZE', 1000),
 
-    /*
-    |--------------------------------------------------------------------------
-    | Logging Configuration
-    |--------------------------------------------------------------------------
-    */
 
-    /*
-    | Enable Logging
-    |
-    | Whether to log scan login events for security monitoring.
-    |
-    */
-    'enable_logging' => env('SCAN_LOGIN_ENABLE_LOGGING', true),
-
-    /*
-    | Log Channel
-    |
-    | The log channel to use for scan login events.
-    |
-    */
-    'log_channel' => env('SCAN_LOGIN_LOG_CHANNEL', 'default'),
-
-    /*
-    | Log Failed Attempts
-    |
-    | Whether to log failed login attempts for security monitoring.
-    |
-    */
-    'log_failed_attempts' => env('SCAN_LOGIN_LOG_FAILED_ATTEMPTS', true),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Cache Configuration
-    |--------------------------------------------------------------------------
-    */
-
-    /*
-    | Cache Store
-    |
-    | The cache store to use for storing token status.
-    | Using cache improves performance for status polling.
-    |
-    */
-    'cache_store' => env('SCAN_LOGIN_CACHE_STORE', 'default'),
-
-    /*
-    | Cache Prefix
-    |
-    | The prefix to use for cache keys.
-    |
-    */
-    'cache_prefix' => env('SCAN_LOGIN_CACHE_PREFIX', 'scan_login'),
 
     /*
     |--------------------------------------------------------------------------
