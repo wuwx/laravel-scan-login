@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Wuwx\LaravelScanLogin\Models\ScanLoginToken;
 use Jenssegers\Agent\Agent;
+use Wuwx\LaravelScanLogin\Services\ScanLoginTokenService;
+use Wuwx\LaravelScanLogin\States\ScanLoginTokenStateClaimed;
 
 class MobileLoginConfirmPage extends Component
 {
@@ -35,6 +37,9 @@ class MobileLoginConfirmPage extends Component
         $this->user = Auth::user();
         $this->loginTime = now()->format('Y-m-d H:i');
         $this->loadTokenInfo();
+
+        $token = ScanLoginToken::where('token', $this->token)->first();
+        app(ScanLoginTokenService::class)->markAsClaimed($token, $this->user->id);
     }
 
     public function loadTokenInfo()
@@ -47,7 +52,7 @@ class MobileLoginConfirmPage extends Component
 
             // Get token record to extract device information
             $tokenRecord = ScanLoginToken::where('token', $this->token)->first();
-            
+
             if (!$tokenRecord) {
                 $this->setError('无效的登录链接，请重新扫码');
                 return;
@@ -85,19 +90,19 @@ class MobileLoginConfirmPage extends Component
 
         try {
             // Validate token first
-            $service = app(\Wuwx\LaravelScanLogin\Services\ScanLoginTokenService::class);
+            $service = app(ScanLoginTokenService::class);
             if (!$service->validateToken($this->token)) {
                 $this->setError('登录令牌无效或已过期');
                 return;
             }
 
             // Mark token as consumed
-            $service = app(\Wuwx\LaravelScanLogin\Services\ScanLoginTokenService::class);
+            $service = app(ScanLoginTokenService::class);
             $tokenRecord = ScanLoginToken::where('token', $this->token)
                 ->whereIn('state', ['pending', 'claimed', 'consumed'])
                 ->where('expires_at', '>', now())
                 ->first();
-            
+
             if ($tokenRecord) {
                 $service->markAsConsumed($tokenRecord, $this->user->getAuthIdentifier());
             }
@@ -127,20 +132,11 @@ class MobileLoginConfirmPage extends Component
 
         $this->isSubmitting = true;
 
-        try {
-            $service = app(\Wuwx\LaravelScanLogin\Services\ScanLoginTokenService::class);
-            $tokenRecord = ScanLoginToken::where('token', $this->token)
-                ->whereIn('state', ['claimed', 'consumed'])
-                ->first();
-            
-            if ($tokenRecord) {
-                $service->markAsCancelled($tokenRecord);
-            }
-        } catch (\Exception $e) {
-            Log::error('Mobile login cancellation failed', [
-                'error' => $e->getMessage(),
-                'token' => $this->token,
-            ]);
+        $service = app(ScanLoginTokenService::class);
+        $tokenRecord = ScanLoginToken::where('token', $this->token)->first();
+
+        if ($tokenRecord) {
+            $service->markAsCancelled($tokenRecord);
         }
     }
 
@@ -154,7 +150,9 @@ class MobileLoginConfirmPage extends Component
 
     public function render()
     {
+        $token = ScanLoginToken::where('token', request()->route('token'))->first();
         return view('scan-login::livewire.pages.mobile-login-confirm-page', [
+            'token' => $token,
             'agent' => $this->agent,
         ]);
     }

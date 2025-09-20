@@ -36,7 +36,7 @@ class ScanLoginTokenService
             $token->claimed_at = now();
             $token->save();
         }
-        
+
         // Then consume it
         $token->state->transitionTo(ScanLoginTokenStateConsumed::class);
         $token->consumer_id = $consumerId;
@@ -65,7 +65,7 @@ class ScanLoginTokenService
     /**
      * Create a new login token.
      */
-    public function createToken(Request $request = null, array $deviceInfo = null): string
+    public function createToken(Request $request = null, array $deviceInfo = null): ScanLoginToken
     {
         $token = Str::random(64);
         $expiryMinutes = config('scan-login.token_expiry_minutes', 5);
@@ -93,7 +93,7 @@ class ScanLoginTokenService
         ], $deviceData));
         $scanLoginToken->save();
 
-        return $token;
+        return $scanLoginToken;
     }
 
     /**

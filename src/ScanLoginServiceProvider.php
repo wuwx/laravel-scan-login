@@ -2,14 +2,11 @@
 
 namespace Wuwx\LaravelScanLogin;
 
+use Livewire\Livewire;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use Illuminate\Routing\Router;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Schedule;
-use Wuwx\LaravelScanLogin\Livewire\QrCodeLogin;
-use Wuwx\LaravelScanLogin\Livewire\MobileLoginConfirm;
-use Wuwx\LaravelScanLogin\Models\ScanLoginToken;
+use Wuwx\LaravelScanLogin\Livewire\Pages\MobileLoginConfirmPage;
+use Wuwx\LaravelScanLogin\Livewire\Pages\QrCodeLoginPage;
 use Wuwx\LaravelScanLogin\Services\ScanLoginTokenService;
 
 class ScanLoginServiceProvider extends PackageServiceProvider
@@ -33,9 +30,9 @@ class ScanLoginServiceProvider extends PackageServiceProvider
     public function packageBooted(): void
     {
         // Register Livewire components
-        \Livewire\Livewire::component('scan-login::qr-code-login', QrCodeLogin::class);
-        \Livewire\Livewire::component('scan-login::mobile-login-confirm', MobileLoginConfirm::class);
-        
+        Livewire::component('scan-login::qr-code-login-page', QrCodeLoginPage::class);
+        Livewire::component('scan-login::mobile-login-confirm-page', MobileLoginConfirmPage::class);
+
     }
 
     public function packageRegistered(): void
