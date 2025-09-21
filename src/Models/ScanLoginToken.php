@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Spatie\ModelStates\HasStates;
 use Wuwx\LaravelScanLogin\Database\Factories\ScanLoginTokenFactory;
 use Wuwx\LaravelScanLogin\States\ScanLoginTokenState;
+use Wuwx\LaravelScanLogin\States\ScanLoginTokenStateExpired;
 
 class ScanLoginToken extends Model
 {
@@ -33,5 +34,14 @@ class ScanLoginToken extends Model
         return ScanLoginTokenFactory::new();
     }
 
-
+    protected static function booted(): void
+    {
+        static::retrieved(function (ScanLoginToken $scanLoginToken) {
+            if ($scanLoginToken->expires_at->isPast()) {
+                if ($scanLoginToken->state->canTransitionTo(ScanLoginTokenStateExpired::class)) {
+                    $scanLoginToken->state->transitionTo(ScanLoginTokenStateExpired::class);
+                }
+            }
+        });
+    }
 }

@@ -19,27 +19,7 @@
         </ol>
     </div>
 
-    <div class="scan-login-status scan-login-status--{{ $status }}">
+    <div class="scan-login-status">
         {{ $token->state->getDescription() }}
     </div>
-
-    @if($showRefreshButton)
-        <button wire:click="refreshQrCode" class="scan-login-btn scan-login-btn--refresh" wire:loading.attr="disabled">
-            <span wire:loading.remove wire:target="refreshQrCode">刷新二维码</span>
-            <span wire:loading wire:target="refreshQrCode">刷新中...</span>
-        </button>
-    @endif
-
-
-    <footer class="scan-login-footer">
-        二维码有效期：{{ $tokenExpiryMinutes }}分钟
-    </footer>
-
-
-    {{-- 显示错误信息 --}}
-    @if(session('scan_login_error'))
-        <div class="scan-login-alert scan-login-alert--error">
-            {{ session('scan_login_error') }}
-        </div>
-    @endif
 </div>

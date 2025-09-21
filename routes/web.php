@@ -21,9 +21,9 @@ Route::prefix('scan-login')
         // QR Code display page - Direct Livewire component for desktop login
         Route::get('/', QrCodeLoginPage::class)
             ->name('qr-code-page');
-        
+
         // Mobile login confirmation page - Direct Livewire component for mobile confirmation
-        Route::get('/{token}', MobileLoginConfirmPage::class)
+        Route::get('/{token:token}', MobileLoginConfirmPage::class)
             ->middleware(['auth'])
             ->name('mobile-login')
             ->where('token', '[a-zA-Z0-9\-_]+');

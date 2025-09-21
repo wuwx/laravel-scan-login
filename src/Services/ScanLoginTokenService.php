@@ -2,14 +2,13 @@
 
 namespace Wuwx\LaravelScanLogin\Services;
 
+use Illuminate\Support\Facades\Request;
+use Illuminate\Support\Str;
 use Wuwx\LaravelScanLogin\Models\ScanLoginToken;
+use Wuwx\LaravelScanLogin\States\ScanLoginTokenStateCancelled;
 use Wuwx\LaravelScanLogin\States\ScanLoginTokenStateClaimed;
 use Wuwx\LaravelScanLogin\States\ScanLoginTokenStateConsumed;
 use Wuwx\LaravelScanLogin\States\ScanLoginTokenStateExpired;
-use Wuwx\LaravelScanLogin\States\ScanLoginTokenStateCancelled;
-use Wuwx\LaravelScanLogin\States\ScanLoginTokenStatePending;
-use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class ScanLoginTokenService
 {
@@ -29,15 +28,6 @@ class ScanLoginTokenService
      */
     public function markAsConsumed(ScanLoginToken $token, int $consumerId): void
     {
-        // First claim the token if it's still pending
-        if ($token->state->canTransitionTo(ScanLoginTokenStateClaimed::class)) {
-            $token->state->transitionTo(ScanLoginTokenStateClaimed::class);
-            $token->claimer_id = $consumerId;
-            $token->claimed_at = now();
-            $token->save();
-        }
-
-        // Then consume it
         $token->state->transitionTo(ScanLoginTokenStateConsumed::class);
         $token->consumer_id = $consumerId;
         $token->consumed_at = now();
@@ -65,56 +55,16 @@ class ScanLoginTokenService
     /**
      * Create a new login token.
      */
-    public function createToken(Request $request = null, array $deviceInfo = null): ScanLoginToken
+    public function createToken(): ScanLoginToken
     {
-        $token = Str::random(64);
-        $expiryMinutes = config('scan-login.token_expiry_minutes', 5);
-        $expiresAt = now()->addMinutes($expiryMinutes);
-
-        // Prepare device information
-        $deviceData = [];
-        if ($deviceInfo) {
-            $deviceData = [
-                'ip_address' => $deviceInfo['ip_address'] ?? null,
-                'user_agent' => $deviceInfo['user_agent'] ?? null,
-            ];
-        } elseif ($request) {
-            $deviceData = [
-                'ip_address' => $request->ip() ?? '0.0.0.0',
-                'user_agent' => $request->userAgent(),
-            ];
-        }
-
         $scanLoginToken = new ScanLoginToken();
-        $scanLoginToken->forceFill(array_merge([
-            'token' => $token,
-            'state' => 'pending',
-            'expires_at' => $expiresAt,
-        ], $deviceData));
+        $scanLoginToken->token = Str::random(64);
+        $scanLoginToken->expires_at = now()->addMinutes(5);
+        $scanLoginToken->user_agent = Request::userAgent();
+        $scanLoginToken->ip_address = Request::getClientIp();
         $scanLoginToken->save();
-
         return $scanLoginToken;
     }
-
-    /**
-     * Validate if a token exists and is valid.
-     */
-    public function validateToken(string $token): bool
-    {
-        $tokenRecord = ScanLoginToken::where('token', $token)->first();
-
-        if (!$tokenRecord) {
-            return false;
-        }
-
-        return in_array($tokenRecord->state->getMorphClass(), [
-                'pending',
-                'claimed',
-                'consumed'
-            ]) && $tokenRecord->expires_at->isFuture();
-    }
-
-
 
 
 }
