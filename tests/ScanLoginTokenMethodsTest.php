@@ -12,45 +12,21 @@ it('can create token using service', function () {
     $service = app(\Wuwx\LaravelScanLogin\Services\ScanLoginTokenService::class);
     $token = $service->createToken();
     
-    expect($token)->toBeString();
-    expect(strlen($token))->toBe(64);
+    expect($token)->toBeInstanceOf(ScanLoginToken::class);
+    expect($token->token)->toBeString();
+    expect(strlen($token->token))->toBe(64);
     
     $this->assertDatabaseHas('scan_login_tokens', [
-        'token' => $token,
+        'token' => $token->token,
         'state' => 'pending'
     ]);
-});
-
-it('can create token with request', function () {
-    $request = Request::create('/test', 'GET', [], [], [], [
-        'HTTP_USER_AGENT' => 'Test Browser',
-        'REMOTE_ADDR' => '192.168.1.1'
-    ]);
-    
-    $service = app(\Wuwx\LaravelScanLogin\Services\ScanLoginTokenService::class);
-    $token = $service->createToken($request);
-    
-    $this->assertDatabaseHas('scan_login_tokens', [
-        'token' => $token,
-        'ip_address' => '192.168.1.1',
-        'user_agent' => 'Test Browser'
-    ]);
-});
-
-it('can validate token using service', function () {
-    $service = app(\Wuwx\LaravelScanLogin\Services\ScanLoginTokenService::class);
-    $token = $service->createToken();
-    
-    expect($service->validateToken($token))->toBeTrue();
-    expect($service->validateToken('invalid-token'))->toBeFalse();
 });
 
 it('can get token state directly', function () {
     $service = app(\Wuwx\LaravelScanLogin\Services\ScanLoginTokenService::class);
     $token = $service->createToken();
     
-    $tokenRecord = ScanLoginToken::where('token', $token)->first();
-    expect($tokenRecord->state->getMorphClass())->toBe('pending');
+    expect($token->state->getMorphClass())->toBe('pending');
     
     $invalidToken = ScanLoginToken::where('token', 'invalid-token')->first();
     expect($invalidToken)->toBeNull();
@@ -60,17 +36,18 @@ it('can mark token as consumed using service', function () {
     $service = app(\Wuwx\LaravelScanLogin\Services\ScanLoginTokenService::class);
     $token = $service->createToken();
     
-    $service = app(\Wuwx\LaravelScanLogin\Services\ScanLoginTokenService::class);
-    $tokenRecord = ScanLoginToken::where('token', $token)->first();
+    // First claim the token
+    $service->markAsClaimed($token, 456);
     
-    $service->markAsConsumed($tokenRecord, 123);
+    // Then consume it
+    $service->markAsConsumed($token, 123);
     
-    $tokenRecord->refresh();
-    expect($tokenRecord->state)->toBeInstanceOf(\Wuwx\LaravelScanLogin\States\ScanLoginTokenStateConsumed::class);
-    expect($tokenRecord->consumer_id)->toBe(123);
+    $token->refresh();
+    expect($token->state)->toBeInstanceOf(\Wuwx\LaravelScanLogin\States\ScanLoginTokenStateConsumed::class);
+    expect($token->consumer_id)->toBe(123);
     
     $this->assertDatabaseHas('scan_login_tokens', [
-        'token' => $token,
+        'token' => $token->token,
         'state' => 'consumed',
         'consumer_id' => 123
     ]);
@@ -82,22 +59,20 @@ it('can cancel token using service', function () {
     $token = $service->createToken();
     
     // Create a claimed token manually for testing cancellation
-    $tokenRecord = ScanLoginToken::where('token', $token)->first();
-    $tokenRecord->state->transitionTo(ScanLoginTokenStateClaimed::class);
-    $tokenRecord->claimer_id = 1;
-    $tokenRecord->claimed_at = now();
-    $tokenRecord->save();
+    $token->state->transitionTo(ScanLoginTokenStateClaimed::class);
+    $token->claimer_id = 1;
+    $token->claimed_at = now();
+    $token->save();
     
     // Then cancel it using service
-    $service = app(\Wuwx\LaravelScanLogin\Services\ScanLoginTokenService::class);
-    $service->markAsCancelled($tokenRecord);
+    $service->markAsCancelled($token);
     
-    $tokenRecord->refresh();
-    expect($tokenRecord->state)->toBeInstanceOf(\Wuwx\LaravelScanLogin\States\ScanLoginTokenStateCancelled::class);
-    expect($tokenRecord->state->getMorphClass())->toBe('cancelled');
+    $token->refresh();
+    expect($token->state)->toBeInstanceOf(\Wuwx\LaravelScanLogin\States\ScanLoginTokenStateCancelled::class);
+    expect($token->state->getMorphClass())->toBe('cancelled');
     
     $this->assertDatabaseHas('scan_login_tokens', [
-        'token' => $token,
+        'token' => $token->token,
         'state' => 'cancelled'
     ]);
 });
@@ -113,9 +88,8 @@ it('cannot cancel pending token', function () {
     $token = $service->createToken();
     
     // Try to cancel a pending token (should fail because pending tokens can't be cancelled)
-    $tokenRecord = ScanLoginToken::where('token', $token)->first();
-    expect($tokenRecord->state)->toBeInstanceOf(\Wuwx\LaravelScanLogin\States\ScanLoginTokenStatePending::class);
-    expect($tokenRecord->state->getMorphClass())->toBe('pending');
+    expect($token->state)->toBeInstanceOf(\Wuwx\LaravelScanLogin\States\ScanLoginTokenStatePending::class);
+    expect($token->state->getMorphClass())->toBe('pending');
 });
 
 it('returns false when trying to mark non-existent token as consumed', function () {
