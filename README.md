@@ -24,7 +24,31 @@ composer require wuwx/laravel-scan-login
 php artisan vendor:publish --provider="Wuwx\LaravelScanLogin\ScanLoginServiceProvider"
 ```
 
-### 3. 运行迁移
+### 3. 配置环境变量
+
+在 `.env` 文件中添加以下配置（可选）：
+
+```env
+# Token 过期时间（分钟，默认：5）
+SCAN_LOGIN_TOKEN_EXPIRY_MINUTES=5
+
+# QR 码大小（像素，默认：200）
+SCAN_LOGIN_QR_CODE_SIZE=200
+
+# 登录成功后的重定向地址（默认：/）
+SCAN_LOGIN_SUCCESS_REDIRECT=/dashboard
+
+# 状态轮询间隔（秒，默认：3）
+SCAN_LOGIN_POLLING_INTERVAL=3
+
+# Token 长度（字符数，默认：64）
+SCAN_LOGIN_TOKEN_LENGTH=64
+
+# 启用/禁用扫码登录功能（默认：true）
+SCAN_LOGIN_ENABLED=true
+```
+
+### 4. 运行迁移
 
 ```bash
 php artisan migrate

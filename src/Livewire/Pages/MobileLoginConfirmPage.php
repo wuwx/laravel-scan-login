@@ -17,9 +17,7 @@ class MobileLoginConfirmPage extends Component
 
     public function mount(ScanLoginTokenService $scanLoginTokenService)
     {
-        if ($this->token->state->canTransitionTo(ScanLoginTokenStateClaimed::class)) {
-            $scanLoginTokenService->markAsClaimed($this->token, Auth::id());
-        }
+        $scanLoginTokenService->markAsClaimed($this->token, Auth::id());
     }
 
     public function consume(ScanLoginTokenService $scanLoginTokenService)

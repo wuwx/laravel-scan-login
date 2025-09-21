@@ -19,7 +19,8 @@ class QrCodeLoginPage extends Component
     public function mount(ScanLoginTokenService $scanLoginTokenService)
     {
         $this->token = $scanLoginTokenService->createToken();
-        $this->qrCode = QrCode::size(200)->generate(route("scan-login.mobile-login", $this->token->token));
+        $qrCodeSize = config('scan-login.qr_code_size', 200);
+        $this->qrCode = QrCode::size($qrCodeSize)->generate(route("scan-login.mobile-login", $this->token->token));
     }
 
     public function hydrate()
