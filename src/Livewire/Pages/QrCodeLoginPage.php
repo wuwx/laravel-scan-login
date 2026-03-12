@@ -2,10 +2,13 @@
 
 namespace Wuwx\LaravelScanLogin\Livewire\Pages;
 
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Wuwx\LaravelScanLogin\Models\ScanLoginToken;
 use Wuwx\LaravelScanLogin\Services\ScanLoginTokenService;
 use Wuwx\LaravelScanLogin\States\ScanLoginTokenStateConsumed;
@@ -20,7 +23,13 @@ class QrCodeLoginPage extends Component
     {
         $this->token = $scanLoginTokenService->createToken();
         $qrCodeSize = config('scan-login.qr_code_size', 200);
-        $this->qrCode = QrCode::size($qrCodeSize)->generate(route("scan-login.mobile-login", $this->token->token));
+
+        $renderer = new ImageRenderer(
+            new RendererStyle($qrCodeSize),
+            new SvgImageBackEnd()
+        );
+        $writer = new Writer($renderer);
+        $this->qrCode = $writer->writeString(route("scan-login.mobile-login", $this->token->token));
     }
 
     public function hydrate()
