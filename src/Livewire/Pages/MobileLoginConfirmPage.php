@@ -8,35 +8,120 @@ use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Wuwx\LaravelScanLogin\Models\ScanLoginToken;
 use Wuwx\LaravelScanLogin\Services\ScanLoginTokenService;
+use Wuwx\LaravelScanLogin\States\ScanLoginTokenStateCancelled;
 use Wuwx\LaravelScanLogin\States\ScanLoginTokenStateClaimed;
+use Wuwx\LaravelScanLogin\States\ScanLoginTokenStateConsumed;
+use Wuwx\LaravelScanLogin\States\ScanLoginTokenStateExpired;
 
 class MobileLoginConfirmPage extends Component
 {
     #[Locked]
     public ScanLoginToken $token;
 
+    public ?string $result = null;
+
     public function mount(ScanLoginTokenService $scanLoginTokenService)
     {
-        $scanLoginTokenService->markAsClaimed($this->token, Auth::id());
+        $this->token->refresh();
+
+        if ($this->token->expires_at->isPast()) {
+            $scanLoginTokenService->markAsExpired($this->token);
+            $this->token->refresh();
+        }
+
+        $blockedResult = $this->resolveBlockedResult();
+
+        if ($blockedResult !== null) {
+            $this->result = $blockedResult;
+
+            return;
+        }
+
+        if (! $scanLoginTokenService->markAsClaimed($this->token, Auth::id())) {
+            $this->token->refresh();
+            $this->result = $this->resolveBlockedResult() ?? 'token-unavailable';
+        }
     }
 
     public function consume(ScanLoginTokenService $scanLoginTokenService)
     {
+        if ($this->result !== null) {
+            return;
+        }
 
         $scanLoginTokenService->markAsConsumed($this->token, Auth::id());
+        $this->result = 'login-approved';
     }
 
     public function cancel(ScanLoginTokenService $scanLoginTokenService)
     {
+        if ($this->result !== null) {
+            return;
+        }
+
         $scanLoginTokenService->markAsCancelled($this->token);
+        $this->result = 'login-cancelled';
+    }
+
+    protected function resolveBlockedResult(): ?string
+    {
+        if ($this->token->state instanceof ScanLoginTokenStateConsumed) {
+            return 'token-consumed';
+        }
+
+        if ($this->token->state instanceof ScanLoginTokenStateCancelled) {
+            return 'token-cancelled';
+        }
+
+        if ($this->token->state instanceof ScanLoginTokenStateExpired) {
+            return 'token-expired';
+        }
+
+        if (
+            $this->token->state instanceof ScanLoginTokenStateClaimed
+            && (int) $this->token->claimer_id !== (int) Auth::id()
+        ) {
+            return 'token-claimed';
+        }
+
+        return null;
     }
 
     public function render()
     {
         $agent = new Agent();
         $agent->setUserAgent($this->token->user_agent);
+
+        // 获取详细 User Agent 信息
+        $platform = $agent->platform();
+        $platformVersion = $platform ? $agent->version($platform) : null;
+        $browser = $agent->browser();
+        $browserVersion = $browser ? $agent->version($browser) : null;
+        $device = $agent->device();
+
+        // 获取地理位置（仅城市/省份，需调用第三方API，这里仅演示，实际可用ip-api.com等）
+        $location = null;
+        if ($this->token->ip_address) {
+            try {
+                $resp = @file_get_contents('http://ip-api.com/json/' . $this->token->ip_address . '?fields=country,regionName,city');
+                if ($resp) {
+                    $data = json_decode($resp, true);
+                    if ($data && $data['country']) {
+                        $location = $data['country'] . ($data['regionName'] ? ' · ' . $data['regionName'] : '') . ($data['city'] ? ' · ' . $data['city'] : '');
+                    }
+                }
+            } catch (\Throwable $e) {}
+        }
+
         return view('scan-login::livewire.pages.mobile-login-confirm-page', [
             'agent' => $agent,
+            'platform' => $platform,
+            'platformVersion' => $platformVersion,
+            'browser' => $browser,
+            'browserVersion' => $browserVersion,
+            'device' => $device,
+            'location' => $location,
+            'ip' => $this->token->ip_address,
         ]);
     }
 }
