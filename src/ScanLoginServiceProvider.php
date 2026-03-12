@@ -29,10 +29,7 @@ class ScanLoginServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
-        // Register Livewire components
-        Livewire::component('scan-login::qr-code-login-page', QrCodeLoginPage::class);
-        Livewire::component('scan-login::mobile-login-confirm-page', MobileLoginConfirmPage::class);
-
+        //
     }
 
     public function packageRegistered(): void
