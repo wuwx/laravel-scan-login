@@ -5,8 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ __('scan-login::scan-login.qr_code_page_title') }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @keyframes pulse-ring {
+</head>
+<body class="bg-gray-50 dark:bg-gray-900">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="w-full max-w-md">
+            <div class="text-center mb-6">
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                    {{ __('scan-login::scan-login.qr_code_page_title') }}
+                </h1>
+                <p class="text-gray-600 dark:text-gray-400">
+                    {{ __('scan-login::scan-login.qr_code_page_subtitle') }}
+                </p>
+            </div>
+
+            {{-- QR-code widget. Publish resources/views/livewire/qr-code-login.blade.php
+                 to customise the card appearance (animations, colours, etc.). --}}
+            <livewire:scan-login.qr-code-login />
+
+            <p class="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
+                {{ __('scan-login::scan-login.hints.qr_code_expires', ['minutes' => config('scan-login.token_expiry_minutes', 5)]) }}
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+
             0% { transform: scale(0.95); opacity: 1; }
             50% { transform: scale(1); opacity: 0.7; }
             100% { transform: scale(0.95); opacity: 1; }

@@ -7,6 +7,8 @@ use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Wuwx\LaravelScanLogin\Console\Commands\CleanupExpiredTokensCommand;
 use Wuwx\LaravelScanLogin\Console\Commands\TokenStatisticsCommand;
 use Wuwx\LaravelScanLogin\Console\Commands\ValidateQrCodeConfigCommand;
+use Wuwx\LaravelScanLogin\Livewire\QrCodeLogin;
+use Wuwx\LaravelScanLogin\Livewire\QrCodeLoginModal;
 use Wuwx\LaravelScanLogin\Listeners\LogScanLoginActivity;
 use Wuwx\LaravelScanLogin\Services\GeoLocationService;
 use Wuwx\LaravelScanLogin\Services\QrCodeService;
@@ -41,6 +43,10 @@ class ScanLoginServiceProvider extends PackageServiceProvider
     {
         // 注册事件监听器
         $this->registerEventListeners();
+
+        // 注册可嵌入的 Livewire 组件（供宿主应用在视图中直接使用）
+        \Livewire\Livewire::component('scan-login.qr-code-login', QrCodeLogin::class);
+        \Livewire\Livewire::component('scan-login.qr-code-login-modal', QrCodeLoginModal::class);
     }
 
     public function packageRegistered(): void
