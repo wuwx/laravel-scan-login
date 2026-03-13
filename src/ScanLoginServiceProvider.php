@@ -45,6 +45,7 @@ class ScanLoginServiceProvider extends PackageServiceProvider
         // Register the service as singleton
         $this->app->singleton(ScanLoginTokenService::class);
         $this->app->singleton(GeoLocationService::class);
+        $this->app->singleton(\Wuwx\LaravelScanLogin\Services\RateLimitService::class);
     }
 
     /**

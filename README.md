@@ -228,7 +228,40 @@ protected function schedule(Schedule $schedule)
 2. **状态验证**：严格的状态转换规则
 3. **设备信息记录**：记录 IP 地址和用户代理
 4. **地理位置显示**：使用本地 GeoIP 数据库，无需外部 API 调用
-5. **自动清理**：建议定期清理过期 token
+5. **速率限制**：防止暴力攻击和滥用行为
+6. **自动清理**：建议定期清理过期 token
+
+## 速率限制
+
+本包内置了完整的速率限制功能，防止暴力攻击和滥用。
+
+### 配置
+
+在 `.env` 文件中配置：
+
+```env
+# 启用/禁用速率限制
+SCAN_LOGIN_RATE_LIMIT_ENABLED=true
+
+# 最大尝试次数
+SCAN_LOGIN_RATE_LIMIT_MAX_ATTEMPTS=10
+
+# 时间窗口（分钟）
+SCAN_LOGIN_RATE_LIMIT_DECAY_MINUTES=1
+
+# 限制策略：ip, user, ip_and_user, session
+SCAN_LOGIN_RATE_LIMIT_STRATEGY=ip
+```
+
+### 功能特性
+
+- ✅ 多种限制策略（IP、用户、会话）
+- ✅ 针对不同操作的独立限制
+- ✅ IP 白名单和黑名单
+- ✅ 自动日志记录
+- ✅ 优雅的错误提示
+
+详细文档请参考 [RATE_LIMITING.md](RATE_LIMITING.md)。
 
 ## GeoIP 功能说明
 

@@ -20,11 +20,12 @@ Route::prefix('scan-login')
     ->group(function () {
         // QR Code display page - Direct Livewire component for desktop login
         Route::get('/', QrCodeLoginPage::class)
+            ->middleware(\Wuwx\LaravelScanLogin\Http\Middleware\ScanLoginRateLimiter::class)
             ->name('qr-code-page');
 
         // Mobile login confirmation page - Direct Livewire component for mobile confirmation
         Route::get('/{token:token}', MobileLoginConfirmPage::class)
-            ->middleware(['auth'])
+            ->middleware(['auth', \Wuwx\LaravelScanLogin\Http\Middleware\ScanLoginRateLimiter::class])
             ->name('mobile-login')
             ->where('token', '[a-zA-Z0-9\-_]+');
     });

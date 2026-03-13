@@ -105,6 +105,40 @@
 
             <flux:text class="text-xs text-zinc-400 dark:text-zinc-500">如不是本人操作，请回到电脑端刷新二维码</flux:text>
         </div>
+    @elseif ($result === 'rate-limit-exceeded')
+        <div class="w-full max-w-xs text-center space-y-6 py-12">
+            <div class="flex items-center justify-center mx-auto size-24 rounded-full bg-red-100 dark:bg-red-900/30">
+                <svg class="size-14 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+            </div>
+
+            <div class="space-y-2">
+                <flux:heading size="xl" class="text-2xl font-semibold">操作过于频繁</flux:heading>
+                <flux:text class="text-zinc-500 dark:text-zinc-400">
+                    您的操作过于频繁<br>请稍后再试
+                </flux:text>
+            </div>
+
+            <flux:text class="text-xs text-zinc-400 dark:text-zinc-500">为了您的账户安全，我们限制了操作频率</flux:text>
+        </div>
+    @elseif ($result === 'token-claimed')
+        <div class="w-full max-w-xs text-center space-y-6 py-12">
+            <div class="flex items-center justify-center mx-auto size-24 rounded-full bg-sky-100 dark:bg-sky-900/30">
+                <svg class="size-14 text-sky-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M15 19.128a9.38 9.38 0 0 0 2.625.372A3.375 3.375 0 0 0 21 16.125V15a2.25 2.25 0 0 0-.659-1.591l-3.098-3.098A2.25 2.25 0 0 1 16.5 8.72V6.75a2.25 2.25 0 0 0-.659-1.591l-.69-.69A2.25 2.25 0 0 0 13.56 3.75h-1.06a2.25 2.25 0 0 0-1.591.659l-3.098 3.098A2.25 2.25 0 0 0 7.5 9.098v1.969a2.25 2.25 0 0 1-.659 1.591l-1.06 1.06A2.25 2.25 0 0 0 5.25 15.31v.815A3.375 3.375 0 0 0 8.625 19.5c.904 0 1.777-.133 2.625-.372M15 19.128a9.355 9.355 0 0 1-6 0M15 19.128v-.003c0-1.113-.285-2.16-.786-3.072M9 19.125v-.003c0-1.113.285-2.16.786-3.072M15.214 16.05a3.75 3.75 0 0 0-6.428 0" />
+                </svg>
+            </div>
+
+            <div class="space-y-2">
+                <flux:heading size="xl" class="text-2xl font-semibold">二维码已被其他设备领取</flux:heading>
+                <flux:text class="text-zinc-500 dark:text-zinc-400">
+                    这个登录请求已经在另一台手机上打开<br>请确认是否为您本人操作
+                </flux:text>
+            </div>
+
+            <flux:text class="text-xs text-zinc-400 dark:text-zinc-500">如不是本人操作，请回到电脑端刷新二维码</flux:text>
+        </div>
     @else
         <flux:card class="w-full max-w-sm space-y-6">
             <div>

@@ -38,6 +38,13 @@ class MobileLoginConfirmPage extends Component
             return;
         }
 
+        // 检查速率限制
+        $rateLimitService = app(\Wuwx\LaravelScanLogin\Services\RateLimitService::class);
+        if ($rateLimitService->shouldLimit(request(), 'token_claim')) {
+            $this->result = 'rate-limit-exceeded';
+            return;
+        }
+
         if (! $scanLoginTokenService->markAsClaimed($this->token, Auth::id())) {
             $this->token->refresh();
             $this->result = $this->resolveBlockedResult() ?? 'token-unavailable';
@@ -47,6 +54,13 @@ class MobileLoginConfirmPage extends Component
     public function consume(ScanLoginTokenService $scanLoginTokenService)
     {
         if ($this->result !== null) {
+            return;
+        }
+
+        // 检查速率限制
+        $rateLimitService = app(\Wuwx\LaravelScanLogin\Services\RateLimitService::class);
+        if ($rateLimitService->shouldLimit(request(), 'token_consume')) {
+            $this->result = 'rate-limit-exceeded';
             return;
         }
 
