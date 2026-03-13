@@ -5,6 +5,8 @@ namespace Wuwx\LaravelScanLogin;
 use Livewire\Livewire;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
+use Wuwx\LaravelScanLogin\Console\Commands\CleanupExpiredTokensCommand;
+use Wuwx\LaravelScanLogin\Console\Commands\TokenStatisticsCommand;
 use Wuwx\LaravelScanLogin\Livewire\Pages\MobileLoginConfirmPage;
 use Wuwx\LaravelScanLogin\Livewire\Pages\QrCodeLoginPage;
 use Wuwx\LaravelScanLogin\Services\GeoLocationService;
@@ -24,7 +26,11 @@ class ScanLoginServiceProvider extends PackageServiceProvider
             ->hasConfigFile()
             ->hasViews()
             ->hasMigration('create_scan_login_tokens_table')
-            ->hasRoute('web');
+            ->hasRoute('web')
+            ->hasCommands([
+                CleanupExpiredTokensCommand::class,
+                TokenStatisticsCommand::class,
+            ]);
     }
 
 

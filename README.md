@@ -121,6 +121,57 @@ php artisan vendor:publish --provider="Wuwx\LaravelScanLogin\ScanLoginServicePro
 - `livewire/pages/qr-code-login-page.blade.php` - 桌面端二维码页面
 - `livewire/pages/mobile-login-confirm-page.blade.php` - 移动端确认页面
 
+## 维护命令
+
+### 清理过期 Token
+
+定期清理过期的 token 以保持数据库整洁：
+
+```bash
+# 删除 7 天前的 token（默认）
+php artisan scan-login:cleanup
+
+# 删除 30 天前的 token
+php artisan scan-login:cleanup --days=30
+
+# 只删除特定状态的 token
+php artisan scan-login:cleanup --status=expired
+
+# 预览将要删除的 token（不实际删除）
+php artisan scan-login:cleanup --dry-run
+
+# 强制删除，不需要确认
+php artisan scan-login:cleanup --force
+```
+
+### 查看统计信息
+
+查看 token 使用统计：
+
+```bash
+# 查看最近 30 天的统计（默认）
+php artisan scan-login:stats
+
+# 查看最近 7 天的统计
+php artisan scan-login:stats --days=7
+```
+
+### 自动清理
+
+建议在调度任务中添加自动清理：
+
+```php
+// app/Console/Kernel.php
+protected function schedule(Schedule $schedule)
+{
+    // 每天清理 7 天前的 token
+    $schedule->command('scan-login:cleanup --force')->daily();
+    
+    // 每月更新 GeoIP 数据库
+    $schedule->command('geoip:update')->monthly();
+}
+```
+
 ## 安全考虑
 
 1. **Token 过期**：Token 默认 5 分钟后过期
