@@ -37,10 +37,13 @@ class ScanLoginToken extends Model
     protected static function booted(): void
     {
         static::retrieved(function (ScanLoginToken $scanLoginToken) {
-            if ($scanLoginToken->expires_at->isPast()) {
-                if ($scanLoginToken->state->canTransitionTo(ScanLoginTokenStateExpired::class)) {
-                    $scanLoginToken->state->transitionTo(ScanLoginTokenStateExpired::class);
-                }
+            if (! $scanLoginToken->expires_at?->isPast()) {
+                return;
+            }
+
+            if ($scanLoginToken->state->canTransitionTo(ScanLoginTokenStateExpired::class)) {
+                $scanLoginToken->state->transitionTo(ScanLoginTokenStateExpired::class);
+                $scanLoginToken->save();
             }
         });
     }

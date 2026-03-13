@@ -238,6 +238,11 @@ it('auto-expires pending token when retrieved after expiry time', function () {
     $retrieved = ScanLoginToken::where('token', 'auto-expire-test-token')->first();
 
     expect($retrieved->state)->toBeInstanceOf(ScanLoginTokenStateExpired::class);
+
+    $this->assertDatabaseHas('scan_login_tokens', [
+        'token' => 'auto-expire-test-token',
+        'state' => 'expired',
+    ]);
 });
 
 it('does not auto-expire a token that is not yet expired', function () {

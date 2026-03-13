@@ -2,15 +2,12 @@
 
 namespace Wuwx\LaravelScanLogin\Livewire\Pages;
 
-use BaconQrCode\Renderer\Image\SvgImageBackEnd;
-use BaconQrCode\Renderer\ImageRenderer;
-use BaconQrCode\Renderer\RendererStyle\RendererStyle;
-use BaconQrCode\Writer;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Wuwx\LaravelScanLogin\Models\ScanLoginToken;
+use Wuwx\LaravelScanLogin\Services\QrCodeService;
 use Wuwx\LaravelScanLogin\Services\ScanLoginTokenService;
 use Wuwx\LaravelScanLogin\States\ScanLoginTokenStateCancelled;
 use Wuwx\LaravelScanLogin\States\ScanLoginTokenStateClaimed;
@@ -22,15 +19,16 @@ class QrCodeLoginPage extends Component
 {
     #[Locked]
     public ScanLoginToken $token;
+
     public string $qrCode;
 
-    public function mount(ScanLoginTokenService $scanLoginTokenService)
+    public function mount(ScanLoginTokenService $scanLoginTokenService, QrCodeService $qrCodeService): void
     {
         $this->token = $scanLoginTokenService->createToken();
-        $this->qrCode = $this->buildQrCode();
+        $this->qrCode = $this->buildQrCode($qrCodeService);
     }
 
-    public function hydrate(ScanLoginTokenService $scanLoginTokenService)
+    public function hydrate(ScanLoginTokenService $scanLoginTokenService, QrCodeService $qrCodeService): void
     {
         $tokenRecord = $this->token->refresh();
 
@@ -43,25 +41,26 @@ class QrCodeLoginPage extends Component
             Auth::loginUsingId($this->token->consumer_id);
             $redirectUrl = config('scan-login.login_success_redirect', '/');
             $this->redirect($redirectUrl);
+
+            return;
         }
 
         // Auto-refresh when cancelled by mobile so the user can scan again immediately
         if ($tokenRecord->state->equals(ScanLoginTokenStateCancelled::class)) {
             $this->token = $scanLoginTokenService->createToken();
-            $this->qrCode = $this->buildQrCode();
+            $this->qrCode = $this->buildQrCode($qrCodeService);
         }
     }
 
-    public function refreshQrCode(ScanLoginTokenService $scanLoginTokenService)
+    public function refreshQrCode(ScanLoginTokenService $scanLoginTokenService, QrCodeService $qrCodeService): void
     {
         $this->token = $scanLoginTokenService->createToken();
-        $this->qrCode = $this->buildQrCode();
+        $this->qrCode = $this->buildQrCode($qrCodeService);
     }
 
-    private function buildQrCode(): string
+    private function buildQrCode(QrCodeService $qrCodeService): string
     {
-        $qrCodeService = app(\Wuwx\LaravelScanLogin\Services\QrCodeService::class);
-        $url = route("scan-login.mobile-login", $this->token->token);
+        $url = route('scan-login.mobile-login', $this->token->token);
         
         // Check if logo is enabled
         if (config('scan-login.qr_code.logo.enabled') && config('scan-login.qr_code.logo.path')) {

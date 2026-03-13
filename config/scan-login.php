@@ -25,16 +25,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | QR Code Size
-    |--------------------------------------------------------------------------
-    |
-    | The size of the QR code in pixels. Default is 200px.
-    |
-    */
-    'qr_code_size' => env('SCAN_LOGIN_QR_CODE_SIZE', 200),
-
-    /*
-    |--------------------------------------------------------------------------
     | QR Code Configuration
     |--------------------------------------------------------------------------
     |
@@ -165,10 +155,10 @@ return [
         'log_hits' => env('SCAN_LOGIN_RATE_LIMIT_LOG_HITS', true),
 
         // IP whitelist (array of IP addresses that bypass rate limiting)
-        'whitelist' => explode(',', env('SCAN_LOGIN_RATE_LIMIT_WHITELIST', '')),
+        'whitelist' => array_values(array_filter(array_map('trim', explode(',', (string) env('SCAN_LOGIN_RATE_LIMIT_WHITELIST', ''))))),
 
         // IP blacklist (array of IP addresses that are always blocked)
-        'blacklist' => explode(',', env('SCAN_LOGIN_RATE_LIMIT_BLACKLIST', '')),
+        'blacklist' => array_values(array_filter(array_map('trim', explode(',', (string) env('SCAN_LOGIN_RATE_LIMIT_BLACKLIST', ''))))),
 
         // Per-action rate limits (override defaults for specific actions)
         'actions' => [

@@ -121,7 +121,8 @@ class RateLimitService
     public function isWhitelisted(Request $request): bool
     {
         $whitelist = config('scan-login.rate_limit.whitelist', []);
-        return in_array($request->ip(), $whitelist);
+
+        return in_array($request->ip(), $whitelist, true);
     }
 
     /**
@@ -130,6 +131,7 @@ class RateLimitService
     public function isBlacklisted(Request $request): bool
     {
         $blacklist = config('scan-login.rate_limit.blacklist', []);
-        return in_array($request->ip(), $blacklist);
+
+        return in_array($request->ip(), $blacklist, true);
     }
 }

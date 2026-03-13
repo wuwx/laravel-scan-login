@@ -1,8 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Wuwx\LaravelScanLogin\Livewire\Pages\QrCodeLoginPage;
 use Wuwx\LaravelScanLogin\Livewire\Pages\MobileLoginConfirmPage;
+use Wuwx\LaravelScanLogin\Livewire\Pages\QrCodeLoginPage;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,18 +14,20 @@ use Wuwx\LaravelScanLogin\Livewire\Pages\MobileLoginConfirmPage;
 |
 */
 
-Route::prefix('scan-login')
-    ->name('scan-login.')
-    ->middleware(['web'])
-    ->group(function () {
-        // QR Code display page - Direct Livewire component for desktop login
-        Route::get('/', QrCodeLoginPage::class)
-            ->middleware(\Wuwx\LaravelScanLogin\Http\Middleware\ScanLoginRateLimiter::class)
-            ->name('qr-code-page');
+if (config('scan-login.enabled', true)) {
+    Route::prefix('scan-login')
+        ->name('scan-login.')
+        ->middleware(['web'])
+        ->group(function () {
+            // QR Code display page - Direct Livewire component for desktop login
+            Route::get('/', QrCodeLoginPage::class)
+                ->middleware(\Wuwx\LaravelScanLogin\Http\Middleware\ScanLoginRateLimiter::class)
+                ->name('qr-code-page');
 
-        // Mobile login confirmation page - Direct Livewire component for mobile confirmation
-        Route::get('/{token:token}', MobileLoginConfirmPage::class)
-            ->middleware(['auth', \Wuwx\LaravelScanLogin\Http\Middleware\ScanLoginRateLimiter::class])
-            ->name('mobile-login')
-            ->where('token', '[a-zA-Z0-9\-_]+');
-    });
+            // Mobile login confirmation page - Direct Livewire component for mobile confirmation
+            Route::get('/{token:token}', MobileLoginConfirmPage::class)
+                ->middleware(['auth', \Wuwx\LaravelScanLogin\Http\Middleware\ScanLoginRateLimiter::class])
+                ->name('mobile-login')
+                ->where('token', '[a-zA-Z0-9\-_]+');
+        });
+}

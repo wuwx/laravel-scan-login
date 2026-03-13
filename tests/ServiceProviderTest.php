@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Routing\RouteCollection;
 use Wuwx\LaravelScanLogin\Console\Commands\CleanupExpiredTokensCommand;
 use Wuwx\LaravelScanLogin\Console\Commands\TokenStatisticsCommand;
 use Wuwx\LaravelScanLogin\Console\Commands\ValidateQrCodeConfigCommand;
@@ -62,6 +63,11 @@ it('has config file published', function () {
         ]);
 });
 
+it('uses empty default whitelist and blacklist arrays', function () {
+    expect(config('scan-login.rate_limit.whitelist'))->toBeArray()->toBeEmpty();
+    expect(config('scan-login.rate_limit.blacklist'))->toBeArray()->toBeEmpty();
+});
+
 it('has translations loaded', function () {
     expect(__('scan-login::scan-login.page.title'))->toBeString();
 });
@@ -108,4 +114,19 @@ it('has migration published', function () {
         file_exists(database_path('migrations/create_scan_login_tokens_table.php.stub'))
         || count($files) > 0
     )->toBeTrue();
+});
+
+it('does not register scan routes when package is disabled', function () {
+    $router = app('router');
+    $originalRoutes = $router->getRoutes();
+
+    config(['scan-login.enabled' => false]);
+    $router->setRoutes(new RouteCollection());
+
+    require __DIR__ . '/../routes/web.php';
+
+    expect($router->getRoutes()->hasNamedRoute('scan-login.qr-code-page'))->toBeFalse();
+    expect($router->getRoutes()->hasNamedRoute('scan-login.mobile-login'))->toBeFalse();
+
+    $router->setRoutes($originalRoutes);
 });

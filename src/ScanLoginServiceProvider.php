@@ -2,14 +2,15 @@
 
 namespace Wuwx\LaravelScanLogin;
 
-use Livewire\Livewire;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Wuwx\LaravelScanLogin\Console\Commands\CleanupExpiredTokensCommand;
 use Wuwx\LaravelScanLogin\Console\Commands\TokenStatisticsCommand;
-use Wuwx\LaravelScanLogin\Livewire\Pages\MobileLoginConfirmPage;
-use Wuwx\LaravelScanLogin\Livewire\Pages\QrCodeLoginPage;
+use Wuwx\LaravelScanLogin\Console\Commands\ValidateQrCodeConfigCommand;
+use Wuwx\LaravelScanLogin\Listeners\LogScanLoginActivity;
 use Wuwx\LaravelScanLogin\Services\GeoLocationService;
+use Wuwx\LaravelScanLogin\Services\QrCodeService;
+use Wuwx\LaravelScanLogin\Services\RateLimitService;
 use Wuwx\LaravelScanLogin\Services\ScanLoginTokenService;
 
 class ScanLoginServiceProvider extends PackageServiceProvider
@@ -31,7 +32,7 @@ class ScanLoginServiceProvider extends PackageServiceProvider
             ->hasCommands([
                 CleanupExpiredTokensCommand::class,
                 TokenStatisticsCommand::class,
-                \Wuwx\LaravelScanLogin\Console\Commands\ValidateQrCodeConfigCommand::class,
+                ValidateQrCodeConfigCommand::class,
             ]);
     }
 
@@ -44,11 +45,11 @@ class ScanLoginServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
-        // Register the service as singleton
+        // Register core services as singletons.
         $this->app->singleton(ScanLoginTokenService::class);
         $this->app->singleton(GeoLocationService::class);
-        $this->app->singleton(\Wuwx\LaravelScanLogin\Services\RateLimitService::class);
-        $this->app->singleton(\Wuwx\LaravelScanLogin\Services\QrCodeService::class);
+        $this->app->singleton(RateLimitService::class);
+        $this->app->singleton(QrCodeService::class);
     }
 
     /**
@@ -63,7 +64,7 @@ class ScanLoginServiceProvider extends PackageServiceProvider
 
         // 注册日志监听器
         $events = $this->app['events'];
-        $events->subscribe(\Wuwx\LaravelScanLogin\Listeners\LogScanLoginActivity::class);
+        $events->subscribe(LogScanLoginActivity::class);
     }
 
 

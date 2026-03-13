@@ -8,6 +8,7 @@ use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Wuwx\LaravelScanLogin\Models\ScanLoginToken;
 use Wuwx\LaravelScanLogin\Services\GeoLocationService;
+use Wuwx\LaravelScanLogin\Services\RateLimitService;
 use Wuwx\LaravelScanLogin\Services\ScanLoginTokenService;
 use Wuwx\LaravelScanLogin\States\ScanLoginTokenStateCancelled;
 use Wuwx\LaravelScanLogin\States\ScanLoginTokenStateClaimed;
@@ -21,7 +22,7 @@ class MobileLoginConfirmPage extends Component
 
     public ?string $result = null;
 
-    public function mount(ScanLoginTokenService $scanLoginTokenService)
+    public function mount(ScanLoginTokenService $scanLoginTokenService, RateLimitService $rateLimitService): void
     {
         $this->token->refresh();
 
@@ -39,43 +40,55 @@ class MobileLoginConfirmPage extends Component
         }
 
         // 检查速率限制
-        $rateLimitService = app(\Wuwx\LaravelScanLogin\Services\RateLimitService::class);
         if ($rateLimitService->shouldLimit(request(), 'token_claim')) {
             $this->result = 'rate-limit-exceeded';
+
             return;
         }
 
-        if (! $scanLoginTokenService->markAsClaimed($this->token, Auth::id())) {
+        if (! $scanLoginTokenService->markAsClaimed($this->token, (int) Auth::id())) {
             $this->token->refresh();
             $this->result = $this->resolveBlockedResult() ?? 'token-unavailable';
         }
     }
 
-    public function consume(ScanLoginTokenService $scanLoginTokenService)
+    public function consume(ScanLoginTokenService $scanLoginTokenService, RateLimitService $rateLimitService): void
     {
         if ($this->result !== null) {
             return;
         }
 
         // 检查速率限制
-        $rateLimitService = app(\Wuwx\LaravelScanLogin\Services\RateLimitService::class);
         if ($rateLimitService->shouldLimit(request(), 'token_consume')) {
             $this->result = 'rate-limit-exceeded';
+
             return;
         }
 
-        $scanLoginTokenService->markAsConsumed($this->token, Auth::id());
-        $this->result = 'login-approved';
+        if ($scanLoginTokenService->markAsConsumed($this->token, (int) Auth::id())) {
+            $this->result = 'login-approved';
+
+            return;
+        }
+
+        $this->token->refresh();
+        $this->result = $this->resolveBlockedResult() ?? 'token-unavailable';
     }
 
-    public function cancel(ScanLoginTokenService $scanLoginTokenService)
+    public function cancel(ScanLoginTokenService $scanLoginTokenService): void
     {
         if ($this->result !== null) {
             return;
         }
 
-        $scanLoginTokenService->markAsCancelled($this->token);
-        $this->result = 'login-cancelled';
+        if ($scanLoginTokenService->markAsCancelled($this->token)) {
+            $this->result = 'login-cancelled';
+
+            return;
+        }
+
+        $this->token->refresh();
+        $this->result = $this->resolveBlockedResult() ?? 'token-unavailable';
     }
 
     protected function resolveBlockedResult(): ?string
@@ -102,7 +115,7 @@ class MobileLoginConfirmPage extends Component
         return null;
     }
 
-    public function render()
+    public function render(GeoLocationService $geoLocationService)
     {
         $agent = new Agent();
         $agent->setUserAgent($this->token->user_agent);
@@ -115,7 +128,6 @@ class MobileLoginConfirmPage extends Component
         $device = $agent->device();
 
         // 获取地理位置（使用 GeoLocationService）
-        $geoLocationService = app(GeoLocationService::class);
         $location = $geoLocationService->getLocationFromIp($this->token->ip_address);
 
         return view('scan-login::livewire.pages.mobile-login-confirm-page', [

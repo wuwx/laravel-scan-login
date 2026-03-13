@@ -2,7 +2,7 @@
 
 namespace Wuwx\LaravelScanLogin\Services;
 
-use Illuminate\Support\Facades\Request;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Wuwx\LaravelScanLogin\Events\ScanLoginTokenCancelled;
 use Wuwx\LaravelScanLogin\Events\ScanLoginTokenClaimed;
@@ -71,6 +71,7 @@ class ScanLoginTokenService
         }
 
         $token->state->transitionTo(ScanLoginTokenStateExpired::class);
+        $token->save();
 
         // 触发事件
         event(new ScanLoginTokenExpired($token));
@@ -100,13 +101,15 @@ class ScanLoginTokenService
     /**
      * Create a new login token.
      */
-    public function createToken(): ScanLoginToken
+    public function createToken(?Request $request = null): ScanLoginToken
     {
+        $request ??= request();
+
         $scanLoginToken = new ScanLoginToken();
         $scanLoginToken->token = Str::random(config('scan-login.token_length', 64));
         $scanLoginToken->expires_at = now()->addMinutes(config('scan-login.token_expiry_minutes', 5));
-        $scanLoginToken->user_agent = Request::userAgent();
-        $scanLoginToken->ip_address = Request::getClientIp();
+        $scanLoginToken->user_agent = $request->userAgent();
+        $scanLoginToken->ip_address = $request->ip();
         $scanLoginToken->save();
 
         // 触发事件
