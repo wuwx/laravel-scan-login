@@ -21,12 +21,11 @@ it('returns null when geoip is disabled', function () {
 it('returns formatted location string for valid ip', function () {
     config(['scan-login.enable_geoip' => true]);
     
-    // 这个测试需要 GeoIP 数据库已安装
     $service = new GeoLocationService();
     $location = $service->getLocationFromIp('8.8.8.8');
     
-    // 如果 GeoIP 服务可用，应该返回字符串或 null
-    expect($location)->toBeIn([null, expect()->toBeString()]);
+    // GeoIP service is not bound in test environment, so null is expected
+    expect($location === null || is_string($location))->toBeTrue();
 });
 
 it('caches location results', function () {
@@ -56,4 +55,25 @@ it('returns detailed location data', function () {
     } else {
         expect($details)->toBeNull();
     }
+});
+
+it('handles invalid ip addresses gracefully', function () {
+    config(['scan-login.enable_geoip' => true]);
+    
+    $service = new GeoLocationService();
+    $location = $service->getLocationFromIp('invalid-ip');
+    
+    expect($location)->toBeNull();
+});
+
+it('returns null when geoip service is not bound', function () {
+    // Temporarily unbind geoip service
+    app()->forgetInstance('geoip');
+    
+    config(['scan-login.enable_geoip' => true]);
+    
+    $service = new GeoLocationService();
+    $location = $service->getLocationFromIp('8.8.8.8');
+    
+    expect($location)->toBeNull();
 });

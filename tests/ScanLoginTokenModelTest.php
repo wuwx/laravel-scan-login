@@ -217,3 +217,54 @@ it('can get device info', function () {
     expect($token->ip_address)->toBe('192.168.1.100');
     expect($token->user_agent)->toBe('Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X)');
 });
+
+it('auto-expires pending token when retrieved after expiry time', function () {
+    $token = new ScanLoginToken();
+    $token->forceFill([
+        'token' => 'auto-expire-test-token',
+        'state' => 'pending',
+        'expires_at' => now()->subMinutes(1), // Already past expiry
+    ]);
+    // Use DB insert to bypass the booted() hook during creation
+    \Illuminate\Support\Facades\DB::table('scan_login_tokens')->insert([
+        'token' => 'auto-expire-test-token',
+        'state' => 'pending',
+        'expires_at' => now()->subMinutes(1),
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    // Retrieving from the database triggers the booted() retrieved hook
+    $retrieved = ScanLoginToken::where('token', 'auto-expire-test-token')->first();
+
+    expect($retrieved->state)->toBeInstanceOf(ScanLoginTokenStateExpired::class);
+});
+
+it('does not auto-expire a token that is not yet expired', function () {
+    \Illuminate\Support\Facades\DB::table('scan_login_tokens')->insert([
+        'token' => 'not-expired-yet-token',
+        'state' => 'pending',
+        'expires_at' => now()->addMinutes(5),
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $retrieved = ScanLoginToken::where('token', 'not-expired-yet-token')->first();
+
+    expect($retrieved->state)->toBeInstanceOf(ScanLoginTokenStatePending::class);
+});
+
+it('does not re-expire an already expired token when retrieved', function () {
+    \Illuminate\Support\Facades\DB::table('scan_login_tokens')->insert([
+        'token' => 'already-expired-token',
+        'state' => 'expired', // Use the morph class name, not the FQCN
+        'expires_at' => now()->subMinutes(10),
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    // Should not throw: canTransitionTo check prevents double-transition
+    $retrieved = ScanLoginToken::where('token', 'already-expired-token')->first();
+
+    expect($retrieved->state)->toBeInstanceOf(ScanLoginTokenStateExpired::class);
+});

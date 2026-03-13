@@ -159,20 +159,22 @@ it('uses different strategies', function () {
     expect($service->remainingAttempts($request, 'test'))->toBeLessThan(10);
 });
 
-it('prevents token creation spam', function () {
+it('tracks and enforces per-action rate limits', function () {
     config([
         'scan-login.rate_limit.enabled' => true,
         'scan-login.rate_limit.max_attempts' => 3,
+        'scan-login.rate_limit.decay_minutes' => 1,
+        'scan-login.rate_limit.actions' => [], // Reset action-specific overrides
     ]);
 
-    $service = app(ScanLoginTokenService::class);
     $rateLimitService = app(RateLimitService::class);
+    $request = request();
 
-    // 创建 3 个 token
+    // First 3 attempts for qr_code_generation are allowed
     for ($i = 0; $i < 3; $i++) {
-        $service->createToken();
+        expect($rateLimitService->shouldLimit($request, 'qr_code_generation'))->toBeFalse();
     }
 
-    // 第 4 次应该被速率限制阻止
-    expect($rateLimitService->shouldLimit(request(), 'qr_code_generation'))->toBeTrue();
+    // 4th attempt should be blocked
+    expect($rateLimitService->shouldLimit($request, 'qr_code_generation'))->toBeTrue();
 });

@@ -86,10 +86,12 @@ it('returns null when trying to cancel non-existent token', function () {
 it('cannot cancel pending token', function () {
     $service = app(\Wuwx\LaravelScanLogin\Services\ScanLoginTokenService::class);
     $token = $service->createToken();
-    
-    // Try to cancel a pending token (should fail because pending tokens can't be cancelled)
+
+    // pending → cancelled transition is not allowed by the state machine
+    $result = $service->markAsCancelled($token);
+
+    expect($result)->toBeFalse();
     expect($token->state)->toBeInstanceOf(\Wuwx\LaravelScanLogin\States\ScanLoginTokenStatePending::class);
-    expect($token->state->getMorphClass())->toBe('pending');
 });
 
 it('returns false when trying to mark non-existent token as consumed', function () {

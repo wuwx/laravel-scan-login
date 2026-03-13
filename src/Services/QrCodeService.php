@@ -49,7 +49,7 @@ class QrCodeService
                 $margin,
                 null,
                 null,
-                Fill::withForegroundColor(
+                Fill::uniformColor(
                     $backgroundColor,
                     $foregroundColor
                 )
@@ -107,16 +107,16 @@ class QrCodeService
     /**
      * Get error correction level.
      */
-    protected function getErrorCorrectionLevel(): int
+    protected function getErrorCorrectionLevel(): \BaconQrCode\Common\ErrorCorrectionLevel
     {
         $level = config('scan-login.qr_code.error_correction', 'high');
         
         return match (strtolower($level)) {
-            'low' => \BaconQrCode\Common\ErrorCorrectionLevel::L,
-            'medium' => \BaconQrCode\Common\ErrorCorrectionLevel::M,
-            'quartile' => \BaconQrCode\Common\ErrorCorrectionLevel::Q,
-            'high' => \BaconQrCode\Common\ErrorCorrectionLevel::H,
-            default => \BaconQrCode\Common\ErrorCorrectionLevel::H,
+            'low' => \BaconQrCode\Common\ErrorCorrectionLevel::L(),
+            'medium' => \BaconQrCode\Common\ErrorCorrectionLevel::M(),
+            'quartile' => \BaconQrCode\Common\ErrorCorrectionLevel::Q(),
+            'high' => \BaconQrCode\Common\ErrorCorrectionLevel::H(),
+            default => \BaconQrCode\Common\ErrorCorrectionLevel::H(),
         };
     }
 
@@ -212,25 +212,70 @@ class QrCodeService
     {
         $errors = [];
         
+        // Validate size
         $size = config('scan-login.qr_code.size');
         if ($size < 100 || $size > 1000) {
             $errors[] = 'QR code size must be between 100 and 1000 pixels';
         }
         
+        // Validate margin
         $margin = config('scan-login.qr_code.margin');
         if ($margin < 0 || $margin > 10) {
             $errors[] = 'QR code margin must be between 0 and 10';
         }
         
+        // Validate format
         $format = config('scan-login.qr_code.format');
         if (!in_array($format, ['svg', 'png'])) {
             $errors[] = 'QR code format must be either "svg" or "png"';
         }
         
+        // Validate PNG format requirements
         if ($format === 'png' && !extension_loaded('imagick')) {
             $errors[] = 'Imagick extension is required for PNG format';
         }
         
+        // Validate error correction level
+        $errorCorrection = config('scan-login.qr_code.error_correction');
+        if (!in_array(strtolower($errorCorrection), ['low', 'medium', 'quartile', 'high'])) {
+            $errors[] = 'Error correction level must be one of: low, medium, quartile, high';
+        }
+        
+        // Validate foreground color
+        $foregroundColor = config('scan-login.qr_code.foreground_color');
+        if (!$this->isValidColor($foregroundColor)) {
+            $errors[] = 'Foreground color must be a valid hex color (e.g., #000000 or #000)';
+        }
+        
+        // Validate background color
+        $backgroundColor = config('scan-login.qr_code.background_color');
+        if (!$this->isValidColor($backgroundColor)) {
+            $errors[] = 'Background color must be a valid hex color (e.g., #ffffff or #fff)';
+        }
+        
+        // Validate logo configuration
+        $logoEnabled = config('scan-login.qr_code.logo.enabled');
+        if ($logoEnabled) {
+            $logoPath = config('scan-login.qr_code.logo.path');
+            if (empty($logoPath)) {
+                $errors[] = 'Logo path must be specified when logo is enabled';
+            } elseif (!file_exists($logoPath)) {
+                $errors[] = "Logo file not found: {$logoPath}";
+            }
+        }
+        
         return $errors;
+    }
+    
+    /**
+     * Validate if a string is a valid hex color.
+     */
+    protected function isValidColor(string $color): bool
+    {
+        // Remove # if present
+        $color = ltrim($color, '#');
+        
+        // Check if it's a valid 3 or 6 character hex color
+        return preg_match('/^[0-9A-Fa-f]{3}$|^[0-9A-Fa-f]{6}$/', $color) === 1;
     }
 }

@@ -22,6 +22,10 @@ class ScanLoginTokenService
      */
     public function markAsClaimed(ScanLoginToken $token, int $claimerId): bool
     {
+        if ($token->expires_at->isPast()) {
+            return false;
+        }
+
         if (!$token->state->canTransitionTo(ScanLoginTokenStateClaimed::class)) {
             return false;
         }
