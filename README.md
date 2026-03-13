@@ -46,9 +46,32 @@ SCAN_LOGIN_TOKEN_LENGTH=64
 
 # 启用/禁用扫码登录功能（默认：true）
 SCAN_LOGIN_ENABLED=true
+
+# 启用/禁用 GeoIP 地理位置显示（默认：true）
+SCAN_LOGIN_ENABLE_GEOIP=true
 ```
 
-### 4. 运行迁移
+### 4. 配置 GeoIP（可选）
+
+本包使用 `torann/geoip` 来显示登录地理位置信息。首先发布 GeoIP 配置文件：
+
+```bash
+php artisan vendor:publish --provider="Torann\GeoIP\GeoIPServiceProvider" --tag=config
+```
+
+然后更新 GeoIP 数据库：
+
+```bash
+php artisan geoip:update
+```
+
+如果不需要地理位置功能，可以在 `.env` 中设置：
+
+```env
+SCAN_LOGIN_ENABLE_GEOIP=false
+```
+
+### 5. 运行迁移
 
 ```bash
 php artisan migrate
@@ -103,7 +126,45 @@ php artisan vendor:publish --provider="Wuwx\LaravelScanLogin\ScanLoginServicePro
 1. **Token 过期**：Token 默认 5 分钟后过期
 2. **状态验证**：严格的状态转换规则
 3. **设备信息记录**：记录 IP 地址和用户代理
-4. **自动清理**：建议定期清理过期 token
+4. **地理位置显示**：使用本地 GeoIP 数据库，无需外部 API 调用
+5. **自动清理**：建议定期清理过期 token
+
+## GeoIP 功能说明
+
+本包集成了 `torann/geoip` 来提供基于 IP 的地理位置显示功能：
+
+### 特性
+
+- 本地数据库查询，无需外部 API 调用
+- 自动缓存查询结果（24小时）
+- 显示国家、省份/州、城市信息
+- 可通过配置开关启用/禁用
+
+### 配置
+
+GeoIP 功能默认启用。如需禁用，在 `.env` 中设置：
+
+```env
+SCAN_LOGIN_ENABLE_GEOIP=false
+```
+
+### 更新 GeoIP 数据库
+
+建议定期更新 GeoIP 数据库以获得最准确的位置信息：
+
+```bash
+php artisan geoip:update
+```
+
+可以在调度任务中添加自动更新：
+
+```php
+// app/Console/Kernel.php
+protected function schedule(Schedule $schedule)
+{
+    $schedule->command('geoip:update')->monthly();
+}
+```
 
 ## 故障排除
 

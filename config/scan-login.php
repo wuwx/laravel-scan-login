@@ -76,4 +76,15 @@ return [
     |
     */
     'enabled' => env('SCAN_LOGIN_ENABLED', true),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Enable GeoIP Location
+    |--------------------------------------------------------------------------
+    |
+    | Whether to display geographical location information based on IP address.
+    | Requires torann/geoip package to be installed and configured.
+    |
+    */
+    'enable_geoip' => env('SCAN_LOGIN_ENABLE_GEOIP', true),
 ];

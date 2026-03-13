@@ -7,6 +7,7 @@ use Jenssegers\Agent\Agent;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Wuwx\LaravelScanLogin\Models\ScanLoginToken;
+use Wuwx\LaravelScanLogin\Services\GeoLocationService;
 use Wuwx\LaravelScanLogin\Services\ScanLoginTokenService;
 use Wuwx\LaravelScanLogin\States\ScanLoginTokenStateCancelled;
 use Wuwx\LaravelScanLogin\States\ScanLoginTokenStateClaimed;
@@ -99,19 +100,9 @@ class MobileLoginConfirmPage extends Component
         $browserVersion = $browser ? $agent->version($browser) : null;
         $device = $agent->device();
 
-        // 获取地理位置（仅城市/省份，需调用第三方API，这里仅演示，实际可用ip-api.com等）
-        $location = null;
-        if ($this->token->ip_address) {
-            try {
-                $resp = @file_get_contents('http://ip-api.com/json/' . $this->token->ip_address . '?fields=country,regionName,city');
-                if ($resp) {
-                    $data = json_decode($resp, true);
-                    if ($data && $data['country']) {
-                        $location = $data['country'] . ($data['regionName'] ? ' · ' . $data['regionName'] : '') . ($data['city'] ? ' · ' . $data['city'] : '');
-                    }
-                }
-            } catch (\Throwable $e) {}
-        }
+        // 获取地理位置（使用 GeoLocationService）
+        $geoLocationService = app(GeoLocationService::class);
+        $location = $geoLocationService->getLocationFromIp($this->token->ip_address);
 
         return view('scan-login::livewire.pages.mobile-login-confirm-page', [
             'agent' => $agent,

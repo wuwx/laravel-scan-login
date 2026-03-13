@@ -7,6 +7,7 @@ use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Wuwx\LaravelScanLogin\Livewire\Pages\MobileLoginConfirmPage;
 use Wuwx\LaravelScanLogin\Livewire\Pages\QrCodeLoginPage;
+use Wuwx\LaravelScanLogin\Services\GeoLocationService;
 use Wuwx\LaravelScanLogin\Services\ScanLoginTokenService;
 
 class ScanLoginServiceProvider extends PackageServiceProvider
@@ -36,6 +37,7 @@ class ScanLoginServiceProvider extends PackageServiceProvider
     {
         // Register the service as singleton
         $this->app->singleton(ScanLoginTokenService::class);
+        $this->app->singleton(GeoLocationService::class);
     }
 
 
