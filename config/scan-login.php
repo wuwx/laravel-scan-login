@@ -87,4 +87,15 @@ return [
     |
     */
     'enable_geoip' => env('SCAN_LOGIN_ENABLE_GEOIP', true),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Enable Default Event Listeners
+    |--------------------------------------------------------------------------
+    |
+    | Whether to enable the default event listeners (logging).
+    | Set to false if you want to register your own listeners.
+    |
+    */
+    'enable_default_listeners' => env('SCAN_LOGIN_ENABLE_DEFAULT_LISTENERS', true),
 ];

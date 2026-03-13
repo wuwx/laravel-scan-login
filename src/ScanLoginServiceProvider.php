@@ -36,7 +36,8 @@ class ScanLoginServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
-        //
+        // 注册事件监听器
+        $this->registerEventListeners();
     }
 
     public function packageRegistered(): void
@@ -44,6 +45,21 @@ class ScanLoginServiceProvider extends PackageServiceProvider
         // Register the service as singleton
         $this->app->singleton(ScanLoginTokenService::class);
         $this->app->singleton(GeoLocationService::class);
+    }
+
+    /**
+     * Register event listeners.
+     */
+    protected function registerEventListeners(): void
+    {
+        // 如果用户想要自定义监听器，可以在配置中禁用默认监听器
+        if (!config('scan-login.enable_default_listeners', true)) {
+            return;
+        }
+
+        // 注册日志监听器
+        $events = $this->app['events'];
+        $events->subscribe(\Wuwx\LaravelScanLogin\Listeners\LogScanLoginActivity::class);
     }
 
 

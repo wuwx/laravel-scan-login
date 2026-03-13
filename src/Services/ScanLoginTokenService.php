@@ -4,6 +4,11 @@ namespace Wuwx\LaravelScanLogin\Services;
 
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Str;
+use Wuwx\LaravelScanLogin\Events\ScanLoginTokenCancelled;
+use Wuwx\LaravelScanLogin\Events\ScanLoginTokenClaimed;
+use Wuwx\LaravelScanLogin\Events\ScanLoginTokenConsumed;
+use Wuwx\LaravelScanLogin\Events\ScanLoginTokenCreated;
+use Wuwx\LaravelScanLogin\Events\ScanLoginTokenExpired;
 use Wuwx\LaravelScanLogin\Models\ScanLoginToken;
 use Wuwx\LaravelScanLogin\States\ScanLoginTokenStateCancelled;
 use Wuwx\LaravelScanLogin\States\ScanLoginTokenStateClaimed;
@@ -25,6 +30,10 @@ class ScanLoginTokenService
         $token->claimer_id = $claimerId;
         $token->claimed_at = now();
         $token->save();
+
+        // 触发事件
+        event(new ScanLoginTokenClaimed($token, $claimerId));
+
         return true;
     }
 
@@ -41,6 +50,10 @@ class ScanLoginTokenService
         $token->consumer_id = $consumerId;
         $token->consumed_at = now();
         $token->save();
+
+        // 触发事件
+        event(new ScanLoginTokenConsumed($token, $consumerId));
+
         return true;
     }
 
@@ -54,6 +67,10 @@ class ScanLoginTokenService
         }
 
         $token->state->transitionTo(ScanLoginTokenStateExpired::class);
+
+        // 触发事件
+        event(new ScanLoginTokenExpired($token));
+
         return true;
     }
 
@@ -69,6 +86,10 @@ class ScanLoginTokenService
         $token->state->transitionTo(ScanLoginTokenStateCancelled::class);
         $token->cancelled_at = now();
         $token->save();
+
+        // 触发事件
+        event(new ScanLoginTokenCancelled($token));
+
         return true;
     }
 
@@ -83,8 +104,10 @@ class ScanLoginTokenService
         $scanLoginToken->user_agent = Request::userAgent();
         $scanLoginToken->ip_address = Request::getClientIp();
         $scanLoginToken->save();
+
+        // 触发事件
+        event(new ScanLoginTokenCreated($scanLoginToken));
+
         return $scanLoginToken;
     }
-
-
 }

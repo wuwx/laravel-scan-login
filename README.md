@@ -121,6 +121,56 @@ php artisan vendor:publish --provider="Wuwx\LaravelScanLogin\ScanLoginServicePro
 - `livewire/pages/qr-code-login-page.blade.php` - 桌面端二维码页面
 - `livewire/pages/mobile-login-confirm-page.blade.php` - 移动端确认页面
 
+## 事件系统
+
+本包提供了完整的事件系统，允许你在登录流程的各个阶段执行自定义逻辑。
+
+### 可用事件
+
+- `ScanLoginTokenCreated` - Token 创建时触发
+- `ScanLoginTokenClaimed` - 二维码被扫描时触发
+- `ScanLoginTokenConsumed` - 登录成功时触发
+- `ScanLoginTokenCancelled` - 用户取消登录时触发
+- `ScanLoginTokenExpired` - Token 过期时触发
+
+### 监听事件示例
+
+在 `app/Providers/EventServiceProvider.php` 中注册监听器：
+
+```php
+use Wuwx\LaravelScanLogin\Events\ScanLoginTokenConsumed;
+use App\Listeners\SendLoginNotification;
+
+protected $listen = [
+    ScanLoginTokenConsumed::class => [
+        SendLoginNotification::class,
+    ],
+];
+```
+
+创建监听器：
+
+```php
+<?php
+
+namespace App\Listeners;
+
+use Wuwx\LaravelScanLogin\Events\ScanLoginTokenConsumed;
+
+class SendLoginNotification
+{
+    public function handle(ScanLoginTokenConsumed $event): void
+    {
+        $user = \App\Models\User::find($event->consumerId);
+        
+        // 发送登录通知
+        $user->notify(new \App\Notifications\ScanLoginSuccess($event->token));
+    }
+}
+```
+
+详细文档请参考 [EVENTS.md](EVENTS.md)。
+
 ## 维护命令
 
 ### 清理过期 Token
