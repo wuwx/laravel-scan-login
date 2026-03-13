@@ -146,7 +146,8 @@ class QrCodeLoginPage extends Component
     {
         if ($this->token->state->equals(ScanLoginTokenStateClaimed::class)) {
             return [
-                'icon' => 'device-phone-mobile',
+                // Heroicons v2 outline: device-phone-mobile
+                'icon_path' => '<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 8.25h3" />',
                 'color' => 'text-sky-500',
                 'background' => 'bg-sky-100 dark:bg-sky-900/30',
                 'title' => '二维码已扫码',
@@ -156,7 +157,8 @@ class QrCodeLoginPage extends Component
 
         if ($this->token->state->equals(ScanLoginTokenStateCancelled::class)) {
             return [
-                'icon' => 'x-circle',
+                // Heroicons v2 outline: x-circle
+                'icon_path' => '<path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />',
                 'color' => 'text-zinc-500',
                 'background' => 'bg-zinc-100 dark:bg-zinc-800/80',
                 'title' => '二维码已取消',
@@ -166,7 +168,8 @@ class QrCodeLoginPage extends Component
 
         if ($this->token->state->equals(ScanLoginTokenStateExpired::class)) {
             return [
-                'icon' => 'clock',
+                // Heroicons v2 outline: clock
+                'icon_path' => '<path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />',
                 'color' => 'text-zinc-500',
                 'background' => 'bg-zinc-100 dark:bg-zinc-800/80',
                 'title' => '二维码已过期',
@@ -176,7 +179,8 @@ class QrCodeLoginPage extends Component
 
         if ($this->token->state->equals(ScanLoginTokenStateConsumed::class)) {
             return [
-                'icon' => 'check-circle',
+                // Heroicons v2 outline: check-circle
+                'icon_path' => '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />',
                 'color' => 'text-green-500',
                 'background' => 'bg-green-100 dark:bg-green-900/30',
                 'title' => '登录已完成',
@@ -185,7 +189,8 @@ class QrCodeLoginPage extends Component
         }
 
         return [
-            'icon' => 'qr-code',
+            // Heroicons v2 outline: qr-code
+            'icon_path' => '<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 3.75 9.375v-4.5ZM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 0 1-1.125-1.125v-4.5ZM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 13.5 9.375v-4.5ZM6.75 6.75h.75v.75h-.75v-.75ZM6.75 16.5h.75v.75h-.75v-.75ZM16.5 6.75h.75v.75h-.75v-.75ZM13.5 13.5h.75v.75h-.75v-.75ZM13.5 19.5h.75v.75h-.75v-.75ZM19.5 13.5h.75v.75h-.75v-.75ZM19.5 19.5h.75v.75h-.75v-.75ZM16.5 16.5h.75v.75h-.75v-.75Z" />',
             'color' => 'text-zinc-500',
             'background' => 'bg-zinc-100 dark:bg-zinc-800/80',
             'title' => '二维码暂不可用',
