@@ -176,4 +176,48 @@ return [
             ],
         ],
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | WebSocket Broadcasting
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, the desktop QR-code page receives instant state updates
+    | via WebSocket (Pusher, Laravel Reverb, or any compatible driver) instead
+    | of relying solely on periodic polling.
+    |
+    | Graceful degradation: polling remains active at `fallback_polling_seconds`
+    | as a safety net. If the WebSocket connection drops or is never established,
+    | the page will still self-update within that window.
+    |
+    | Prerequisites:
+    |   1. Configure a broadcasting driver in config/broadcasting.php
+    |      (BROADCAST_CONNECTION=pusher or BROADCAST_CONNECTION=reverb)
+    |   2. Install the matching server-side SDK:
+    |      - Pusher:  composer require pusher/pusher-php-server
+    |      - Reverb:  php artisan install:broadcasting (bundles Reverb)
+    |   3. Include Laravel Echo + the matching JS client in your frontend
+    |      build (e.g. via resources/js/bootstrap.js).
+    |
+    | Note: the broadcast channel is **public** (no auth required) because the
+    | QR-code page is visited by unauthenticated users. The 64-character random
+    | token value already acts as a capability secret limiting who can build the
+    | channel name — comparable security to the existing polling URL approach.
+    |
+    */
+    'broadcasting' => [
+        // Set to true to enable WebSocket broadcasting.
+        // When false the package behaves exactly as before (polling only).
+        'enabled' => env('SCAN_LOGIN_BROADCASTING_ENABLED', false),
+
+        // Prefix used when constructing the broadcast channel name.
+        // Full channel name: {channel_prefix}.{64-char-token-value}
+        'channel_prefix' => env('SCAN_LOGIN_BROADCASTING_CHANNEL_PREFIX', 'scan-login'),
+
+        // Polling interval (seconds) used as a WebSocket fallback.
+        // When broadcasting is enabled, polling continues at this longer
+        // interval so that any missed WebSocket events are eventually caught.
+        // Reduce this value if you need a tighter fallback guarantee.
+        'fallback_polling_seconds' => env('SCAN_LOGIN_BROADCASTING_FALLBACK_POLLING', 15),
+    ],
 ];

@@ -1,4 +1,4 @@
-<div class="flex items-center justify-center min-h-screen p-4" wire:poll>
+<div class="flex items-center justify-center min-h-screen p-4" wire:poll.{{ $pollingIntervalMs }}ms>
     <flux:card class="w-full max-w-sm space-y-6 text-center">
         <div>
             <flux:heading size="xl">扫码登录</flux:heading>

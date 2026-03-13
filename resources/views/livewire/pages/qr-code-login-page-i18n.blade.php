@@ -17,7 +17,7 @@
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900">
-    <div class="flex items-center justify-center min-h-screen p-4" wire:poll>
+    <div class="flex items-center justify-center min-h-screen p-4" wire:poll.{{ $pollingIntervalMs }}ms>
         <div class="w-full max-w-md">
             <!-- Card -->
             <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">

@@ -9,6 +9,7 @@ use Wuwx\LaravelScanLogin\Events\ScanLoginTokenClaimed;
 use Wuwx\LaravelScanLogin\Events\ScanLoginTokenConsumed;
 use Wuwx\LaravelScanLogin\Events\ScanLoginTokenCreated;
 use Wuwx\LaravelScanLogin\Events\ScanLoginTokenExpired;
+use Wuwx\LaravelScanLogin\Events\ScanLoginTokenStateUpdated;
 use Wuwx\LaravelScanLogin\Models\ScanLoginToken;
 use Wuwx\LaravelScanLogin\States\ScanLoginTokenStateCancelled;
 use Wuwx\LaravelScanLogin\States\ScanLoginTokenStateClaimed;
@@ -37,6 +38,7 @@ class ScanLoginTokenService
 
         // 触发事件
         event(new ScanLoginTokenClaimed($token, $claimerId));
+        event(new ScanLoginTokenStateUpdated($token));
 
         return true;
     }
@@ -57,6 +59,7 @@ class ScanLoginTokenService
 
         // 触发事件
         event(new ScanLoginTokenConsumed($token, $consumerId));
+        event(new ScanLoginTokenStateUpdated($token));
 
         return true;
     }
@@ -75,6 +78,7 @@ class ScanLoginTokenService
 
         // 触发事件
         event(new ScanLoginTokenExpired($token));
+        event(new ScanLoginTokenStateUpdated($token));
 
         return true;
     }
@@ -94,6 +98,7 @@ class ScanLoginTokenService
 
         // 触发事件
         event(new ScanLoginTokenCancelled($token));
+        event(new ScanLoginTokenStateUpdated($token));
 
         return true;
     }

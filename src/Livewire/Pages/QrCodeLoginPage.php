@@ -22,10 +22,20 @@ class QrCodeLoginPage extends Component
 
     public string $qrCode;
 
+    /**
+     * Polling interval in milliseconds passed to wire:poll in the view.
+     *
+     * When broadcasting is enabled this is set to the (longer) fallback interval
+     * so that polling only serves as a safety net. When broadcasting is disabled
+     * the normal interval from config('scan-login.polling_interval_seconds') is used.
+     */
+    public int $pollingIntervalMs;
+
     public function mount(ScanLoginTokenService $scanLoginTokenService, QrCodeService $qrCodeService): void
     {
         $this->token = $scanLoginTokenService->createToken();
         $this->qrCode = $this->buildQrCode($qrCodeService);
+        $this->pollingIntervalMs = $this->resolvePollingIntervalMs();
     }
 
     public function hydrate(ScanLoginTokenService $scanLoginTokenService, QrCodeService $qrCodeService): void
@@ -52,10 +62,53 @@ class QrCodeLoginPage extends Component
         }
     }
 
+    /**
+     * Dynamic Livewire event listeners.
+     *
+     * When broadcasting is enabled, subscribes to the token-specific public
+     * Echo channel so that any WebSocket push triggers an immediate component
+     * re-hydration (and therefore a state check) without waiting for the next
+     * polling tick.
+     *
+     * The listener format understood by Livewire 3's Echo bridge is:
+     *   "echo:{channel},{BroadcastAs name}" => 'methodName'
+     */
+    protected function getListeners(): array
+    {
+        if (! config('scan-login.broadcasting.enabled', false)) {
+            return [];
+        }
+
+        $prefix = config('scan-login.broadcasting.channel_prefix', 'scan-login');
+
+        return [
+            "echo:{$prefix}.{$this->token->token},ScanLoginTokenStateUpdated" => 'handleBroadcastUpdate',
+        ];
+    }
+
+    /**
+     * Called by the Livewire Echo bridge when a ScanLoginTokenStateUpdated
+     * broadcast is received on this token's channel.
+     *
+     * The method body is intentionally empty: merely receiving the call causes
+     * Livewire to run a full server round-trip, which executes hydrate() and
+     * handles the new state (redirect on consumed, refresh on cancelled, etc.).
+     */
+    public function handleBroadcastUpdate(): void {}
+
     public function refreshQrCode(ScanLoginTokenService $scanLoginTokenService, QrCodeService $qrCodeService): void
     {
         $this->token = $scanLoginTokenService->createToken();
         $this->qrCode = $this->buildQrCode($qrCodeService);
+    }
+
+    private function resolvePollingIntervalMs(): int
+    {
+        if (config('scan-login.broadcasting.enabled', false)) {
+            return (int) (config('scan-login.broadcasting.fallback_polling_seconds', 15) * 1000);
+        }
+
+        return (int) (config('scan-login.polling_interval_seconds', 3) * 1000);
     }
 
     private function buildQrCode(QrCodeService $qrCodeService): string
