@@ -35,6 +35,16 @@ SCAN_LOGIN_TOKEN_EXPIRY_MINUTES=5
 # QR 码大小（像素，默认：200）
 SCAN_LOGIN_QR_CODE_SIZE=200
 
+# QR 码格式（svg 或 png，默认：svg）
+SCAN_LOGIN_QR_CODE_FORMAT=svg
+
+# QR 码错误纠正级别（low, medium, quartile, high）
+SCAN_LOGIN_QR_CODE_ERROR_CORRECTION=high
+
+# QR 码颜色
+SCAN_LOGIN_QR_CODE_FOREGROUND=#000000
+SCAN_LOGIN_QR_CODE_BACKGROUND=#ffffff
+
 # 登录成功后的重定向地址（默认：/）
 SCAN_LOGIN_SUCCESS_REDIRECT=/dashboard
 

@@ -35,6 +35,47 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | QR Code Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Advanced QR code configuration options.
+    |
+    */
+    'qr_code' => [
+        // QR code size in pixels (100-1000)
+        'size' => env('SCAN_LOGIN_QR_CODE_SIZE', 200),
+
+        // Format: 'svg' or 'png'
+        'format' => env('SCAN_LOGIN_QR_CODE_FORMAT', 'svg'),
+
+        // Margin around QR code (0-10)
+        'margin' => env('SCAN_LOGIN_QR_CODE_MARGIN', 1),
+
+        // Error correction level: 'low', 'medium', 'quartile', 'high'
+        // Higher levels allow QR code to be read even if partially damaged
+        'error_correction' => env('SCAN_LOGIN_QR_CODE_ERROR_CORRECTION', 'high'),
+
+        // Foreground color (hex color code)
+        'foreground_color' => env('SCAN_LOGIN_QR_CODE_FOREGROUND', '#000000'),
+
+        // Background color (hex color code)
+        'background_color' => env('SCAN_LOGIN_QR_CODE_BACKGROUND', '#ffffff'),
+
+        // Logo configuration (optional)
+        'logo' => [
+            // Enable logo overlay
+            'enabled' => env('SCAN_LOGIN_QR_CODE_LOGO_ENABLED', false),
+
+            // Path to logo file (relative to public directory or absolute path)
+            'path' => env('SCAN_LOGIN_QR_CODE_LOGO_PATH', null),
+
+            // Logo size as percentage of QR code size (10-30)
+            'size_percentage' => env('SCAN_LOGIN_QR_CODE_LOGO_SIZE', 20),
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Login Success Redirect
     |--------------------------------------------------------------------------
     |

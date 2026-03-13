@@ -31,6 +31,7 @@ class ScanLoginServiceProvider extends PackageServiceProvider
             ->hasCommands([
                 CleanupExpiredTokensCommand::class,
                 TokenStatisticsCommand::class,
+                \Wuwx\LaravelScanLogin\Console\Commands\ValidateQrCodeConfigCommand::class,
             ]);
     }
 
@@ -47,6 +48,7 @@ class ScanLoginServiceProvider extends PackageServiceProvider
         $this->app->singleton(ScanLoginTokenService::class);
         $this->app->singleton(GeoLocationService::class);
         $this->app->singleton(\Wuwx\LaravelScanLogin\Services\RateLimitService::class);
+        $this->app->singleton(\Wuwx\LaravelScanLogin\Services\QrCodeService::class);
     }
 
     /**

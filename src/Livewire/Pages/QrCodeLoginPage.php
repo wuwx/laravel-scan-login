@@ -60,16 +60,29 @@ class QrCodeLoginPage extends Component
 
     private function buildQrCode(): string
     {
-        $qrCodeSize = config('scan-login.qr_code_size', 200);
-
-        $renderer = new ImageRenderer(
-            new RendererStyle($qrCodeSize),
-            new SvgImageBackEnd()
-        );
-        $writer = new Writer($renderer);
-        Log::info(route("scan-login.mobile-login", $this->token->token));
-
-        return $writer->writeString(route("scan-login.mobile-login", $this->token->token));
+        $qrCodeService = app(\Wuwx\LaravelScanLogin\Services\QrCodeService::class);
+        $url = route("scan-login.mobile-login", $this->token->token);
+        
+        // Check if logo is enabled
+        if (config('scan-login.qr_code.logo.enabled') && config('scan-login.qr_code.logo.path')) {
+            $logoPath = config('scan-login.qr_code.logo.path');
+            
+            // Convert relative path to absolute
+            if (!str_starts_with($logoPath, '/')) {
+                $logoPath = public_path($logoPath);
+            }
+            
+            if (file_exists($logoPath)) {
+                try {
+                    return $qrCodeService->generateWithLogo($url, $logoPath);
+                } catch (\Exception $e) {
+                    Log::warning('Failed to generate QR code with logo: ' . $e->getMessage());
+                    return $qrCodeService->generate($url);
+                }
+            }
+        }
+        
+        return $qrCodeService->generate($url);
     }
 
     public function shouldDisplayQrCode(): bool
