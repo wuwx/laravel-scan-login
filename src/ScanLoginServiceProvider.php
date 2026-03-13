@@ -25,6 +25,7 @@ class ScanLoginServiceProvider extends PackageServiceProvider
             ->name('laravel-scan-login')
             ->hasConfigFile()
             ->hasViews()
+            ->hasTranslations()
             ->hasMigration('create_scan_login_tokens_table')
             ->hasRoute('web')
             ->hasCommands([

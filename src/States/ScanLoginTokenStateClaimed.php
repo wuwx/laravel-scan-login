@@ -13,6 +13,6 @@ class ScanLoginTokenStateClaimed extends ScanLoginTokenState
 
     public function getDescription(): string
     {
-        return '已领用，等待选择用户';
+        return __('scan-login::scan-login.status.claimed');
     }
 }

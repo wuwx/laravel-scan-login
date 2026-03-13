@@ -13,6 +13,6 @@ class ScanLoginTokenStateExpired extends ScanLoginTokenState
 
     public function getDescription(): string
     {
-        return '已过期';
+        return __('scan-login::scan-login.status.expired');
     }
 }

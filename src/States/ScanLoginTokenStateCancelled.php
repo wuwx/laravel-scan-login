@@ -13,6 +13,6 @@ class ScanLoginTokenStateCancelled extends ScanLoginTokenState
 
     public function getDescription(): string
     {
-        return '已取消';
+        return __('scan-login::scan-login.status.cancelled');
     }
 }

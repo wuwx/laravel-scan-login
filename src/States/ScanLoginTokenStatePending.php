@@ -13,6 +13,6 @@ class ScanLoginTokenStatePending extends ScanLoginTokenState
 
     public function getDescription(): string
     {
-        return '待处理，等待扫码';
+        return __('scan-login::scan-login.status.pending');
     }
 }

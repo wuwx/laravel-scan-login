@@ -263,6 +263,38 @@ SCAN_LOGIN_RATE_LIMIT_STRATEGY=ip
 
 详细文档请参考 [RATE_LIMITING.md](RATE_LIMITING.md)。
 
+## 多语言支持
+
+本包提供完整的多语言支持，默认包含简体中文和英文。
+
+### 支持的语言
+
+- 🇨🇳 简体中文 (zh_CN)
+- 🇺🇸 英文 (en)
+
+### 配置语言
+
+在 `config/app.php` 或 `.env` 中设置：
+
+```env
+APP_LOCALE=zh_CN  # 或 en
+```
+
+### 发布语言文件
+
+```bash
+php artisan vendor:publish --provider="Wuwx\LaravelScanLogin\ScanLoginServiceProvider" --tag="translations"
+```
+
+### 在视图中使用
+
+```blade
+<h1>{{ __('scan-login::scan-login.qr_code_page_title') }}</h1>
+<p>{{ __('scan-login::scan-login.qr_code_page_subtitle') }}</p>
+```
+
+详细文档请参考 [LOCALIZATION.md](LOCALIZATION.md)。
+
 ## GeoIP 功能说明
 
 本包集成了 `torann/geoip` 来提供基于 IP 的地理位置显示功能：

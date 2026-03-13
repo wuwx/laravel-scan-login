@@ -13,6 +13,6 @@ class ScanLoginTokenStateConsumed extends ScanLoginTokenState
 
     public function getDescription(): string
     {
-        return '已消费，登录完成';
+        return __('scan-login::scan-login.status.consumed');
     }
 }
